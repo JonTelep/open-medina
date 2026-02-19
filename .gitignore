@@ -1,0 +1,33 @@
+# dependencies
+node_modules
+.bun
+
+# next.js
+.next/
+out/
+
+# production
+build
+dist
+
+# data files
+data/accountability.db
+data/accountability.db-shm
+data/accountability.db-wal
+data/uploads/
+
+# env files
+.env
+.env*.local
+
+# debug
+npm-debug.log*
+
+# misc
+.DS_Store
+*.tsbuildinfo
+.eslintcache
+
+# IDE
+.idea
+.vscode
