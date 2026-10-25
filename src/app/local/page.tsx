@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAcs, getAgendas, getOfficials, getPopulation, getSources } from "@/lib/local-data";
+import { getAcs, getAgendas, getJurisdictions, getOfficials, getPopulation, getSources } from "@/lib/local-data";
 import { LastUpdated, formatET } from "@/components/last-updated";
 import { ReportLink } from "@/components/forms";
 
@@ -16,6 +16,8 @@ export default function LocalPage() {
   const agendas = getAgendas(8);
   const sources = getSources();
   const acs = getAcs();
+  const juris2 = getJurisdictions();
+  const dirOfficials = officials.filter((o) => o.source_key === "county-directory");
   const measures = [...new Set(acs.map((a) => a.measure))];
   const fmt = (m: string, v: number) => (m.includes("rate") || m.includes("degree") ? `${v}%` : `$${v.toLocaleString()}`);
 
@@ -111,11 +113,56 @@ export default function LocalPage() {
         </section>
       )}
 
+      {juris2.length > 0 && (
+        <section id="communities">
+          <h2 className="text-2xl font-bold">Every city, village and township</h2>
+          <p className="mt-1 max-w-3xl text-sm text-[var(--muted)]">
+            Medina County has 4 cities (part of Rittman is in the county), 6 villages and 17 townships. Elected officials
+            are from the county&apos;s official Public Officials Directory. Populations are Census estimates for July 1, {juris2[0]!.pop_year}.
+          </p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {juris2.map((j, i) => {
+              const people = dirOfficials.filter((o) => o.jurisdiction === j.name);
+              return (
+                <details key={j.name} open={i === 0} className="min-w-0 rounded-xl border border-[var(--royal)] bg-white p-4 open:border-t-4 open:border-t-[var(--gold)]">
+                  <summary className="cursor-pointer list-none">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-semibold text-[var(--navy)]">{j.name}{j.name === "Liverpool Township" ? " (Valley City)" : ""}</span>
+                      {j.population != null && <span className="shrink-0 text-sm tabular-nums">{j.population.toLocaleString()} people</span>}
+                    </div>
+                    <span className="text-xs capitalize text-[var(--muted)]">{j.kind}</span>
+                  </summary>
+                  {j.pop_note && <p className="mt-2 text-xs text-[var(--muted)]">{j.pop_note}</p>}
+                  {people.length > 0 && (
+                    <ul className="mt-3 space-y-1 text-sm">
+                      {people.map((o) => (
+                        <li key={o.role + o.name} className="flex flex-wrap justify-between gap-x-2">
+                          <span className="font-medium">{o.name}</span>
+                          <span className="text-xs text-[var(--muted)]">{o.role}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                    {j.website && <a href={j.website} target="_blank" rel="noopener noreferrer" className={link}>Official website</a>}
+                    <ReportLink item={`Local Government: ${j.name}`} />
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+          <div className="mt-2 flex flex-col gap-1">
+            <SourceLink k="county-directory" />
+            <a href="https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv" target="_blank" rel="noopener noreferrer" className={`break-all text-xs ${link}`}>Source: U.S. Census Bureau subcounty population estimates</a>
+          </div>
+        </section>
+      )}
+
       <section>
         <h2 className="text-2xl font-bold">City councils</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {COUNCILS.map((c) => {
-            const list = officials.filter((o) => o.jurisdiction === c);
+            const list = officials.filter((o) => o.jurisdiction === c && o.source_key !== "county-directory");
             return (
               <div key={c} className="rounded-xl border border-[var(--royal)] border-t-4 border-t-[var(--gold)] bg-white p-5">
                 <h3 className="text-lg font-semibold text-[var(--navy)]">{c}</h3>

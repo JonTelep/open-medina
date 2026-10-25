@@ -36,6 +36,7 @@ export function Footer() {
           <ul className="mt-3 grid grid-cols-2 gap-2 text-sm">
             {[
               ["/search", "Ask Medina"],
+              ["/ballot", "What's on my ballot"],
               ["/local", "Local Government"],
               ["/people", "People"],
               ["/money", "Money"],
