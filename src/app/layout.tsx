@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
+import { UtmKeeper } from "@/components/utm-keeper";
 import { SITE } from "@/lib/site";
 import { liveSections } from "@/lib/sections";
 
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <Footer />
+        <UtmKeeper />
       </body>
     </html>
   );

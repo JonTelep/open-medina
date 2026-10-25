@@ -1,5 +1,6 @@
 "use client";
 import { useState, useId } from "react";
+import { landingUtm } from "./utm-keeper";
 
 const input = "w-full rounded-lg border border-[var(--border-soft)] px-3 py-2 focus:border-[var(--royal)] focus:outline-none";
 const hp = { position: "absolute" as const, left: "-10000px", width: 1, height: 1, overflow: "hidden" };
@@ -57,7 +58,7 @@ export function NewsletterForm({ dark = false }: { dark?: boolean }) {
         e.preventDefault();
         setErr("");
         try {
-          await post("/api/subscribe", Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>);
+          await post("/api/subscribe", { ...landingUtm(), ...(Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>) });
           setDone(true);
         } catch (x) {
           setErr((x as Error).message);
