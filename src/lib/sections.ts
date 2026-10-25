@@ -24,6 +24,7 @@ export const SECTIONS: Section[] = [
   { href: "/docket", label: "Docket", title: "Weekly Docket", body: "Browse weekly payment batches approved by commissioners. Filter by vendor, department, or amount.", tables: ["dockets"], sourced: false },
   { href: "/meetings", label: "Meetings", title: "Meeting Minutes", body: "Search commissioner meeting minutes. See who was mentioned and what was discussed.", tables: ["meetings"], sourced: false },
   { href: "/donations", label: "Donations", title: "Campaign Finance", body: "Explore campaign contributions by candidate or donor. See who funds local elections.", tables: ["donations"], sourced: false },
+  { href: "/budget", label: "Budget", footerLabel: "County budget by year", title: "County budget by year", body: "Medina County General Fund budget and actual spending each year, from the county's audited financial reports." },
   { href: "/legislation", label: "Legislation", title: "State Legislation", body: "Track Ohio bills and see how Medina County's representatives vote.", tables: ["bills"] },
   { href: "/about", label: "About" },
 ];

@@ -53,7 +53,7 @@ export default async function LegislationPage({ searchParams }: { searchParams: 
         Districts 66 and 67, Senate District 22) or that mention Medina County. Source:{" "}
         <a className="underline" href="https://legiscan.com/OH" target="_blank" rel="noopener noreferrer">LegiScan</a>
         , with official bill text at{" "}
-        <a className="underline" href="https://www.legislature.ohio.gov/legislation" target="_blank" rel="noopener noreferrer">legislature.ohio.gov</a>.
+        <a className="underline" href="https://www.legislature.ohio.gov/legislation/search?generalAssembly=136" target="_blank" rel="noopener noreferrer">legislature.ohio.gov</a>.
       </p>
               </div>
       </div>

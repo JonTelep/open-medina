@@ -93,17 +93,21 @@ async function censusCounty(): Promise<number> {
 // ── ACS 5-year estimates (Census API, key from env, never stored in URLs we save) ──
 export const ACS_URL = "https://api.census.gov/data/2024/acs/acs5";
 const ACS_VARS = [
-  { measure: "Median household income", table: "", v: "B19013_001" },
-  { measure: "Median home value", table: "", v: "B25077_001" },
-  { measure: "Poverty rate", table: "/subject", v: "S1701_C03_001" },
-  { measure: "Bachelor's degree or higher (age 25+)", table: "/subject", v: "S1501_C02_015" },
+  { measure: "Median household income", table: "", v: "B19013_001", page: "ACSDT5Y2024.B19013" },
+  { measure: "Median home value", table: "", v: "B25077_001", page: "ACSDT5Y2024.B25077" },
+  { measure: "Poverty rate", table: "/subject", v: "S1701_C03_001", page: "ACSST5Y2024.S1701" },
+  { measure: "Bachelor's degree or higher (age 25+)", table: "/subject", v: "S1501_C02_015", page: "ACSST5Y2024.S1501" },
 ];
 const ACS_GEOS = [
-  { name: "Medina County", q: "for=county:103&in=state:39" },
-  { name: "City of Medina", q: "for=place:48790&in=state:39" },
-  { name: "City of Brunswick", q: "for=place:09680&in=state:39" },
-  { name: "City of Wadsworth", q: "for=place:80304&in=state:39" },
+  { name: "Medina County", q: "for=county:103&in=state:39", g: "050XX00US39103" },
+  { name: "City of Medina", q: "for=place:48790&in=state:39", g: "160XX00US3948790" },
+  { name: "City of Brunswick", q: "for=place:09680&in=state:39", g: "160XX00US3909680" },
+  { name: "City of Wadsworth", q: "for=place:80304&in=state:39", g: "160XX00US3980304" },
 ];
+// The Census API now requires a key, so visitors get a "missing key" page from API links.
+// Each figure links to the same table and geography on data.census.gov instead.
+export const ACS_INFO_URL = "https://www.census.gov/data/developers/data-sets/acs-5year.2024.html";
+const acsPageUrl = (table: string, geo: string) => `https://data.census.gov/table/${table}?g=${geo}`;
 async function censusAcs(): Promise<number> {
   const key = process.env.CENSUS_API_KEY;
   if (!key) throw new Error("CENSUS_API_KEY not set");
@@ -115,7 +119,7 @@ async function censusAcs(): Promise<number> {
       const [, r] = (await res.json()) as string[][];
       const val = Number(r![1]);
       if (!Number.isFinite(val) || val < 0) throw new Error(`Census API returned no value for ${g.name} ${a.v}`);
-      rows.push([g.name, 2024, a.measure, val, Number(r![2]), a.v + "E", `${ACS_URL}${a.table}?get=NAME,${a.v}E,${a.v}M&${g.q}`, now()]);
+      rows.push([g.name, 2024, a.measure, val, Number(r![2]), a.v + "E", acsPageUrl(a.page, g.g), now()]);
     }
   const ins = sqlite.prepare("INSERT OR REPLACE INTO local_acs (geography, year, measure, value, moe, variable, source_url, verified_at, source_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'census-acs')");
   sqlite.transaction(() => rows.forEach((r) => ins.run(...r)))();
@@ -294,6 +298,8 @@ async function countyDirectory(): Promise<number> {
     if (!cur) continue;
     if (!cur.website && /^(www\.)?[A-Za-z]+\.(org|com|net|gov|us|oh\.us)$/i.test(t)) {
       cur.website = "https://" + t.toLowerCase().replace(/^www\./, "www.");
+      // The www host's TLS certificate does not cover it; the bare domain serves the same site with a valid certificate.
+      if (cur.website === "https://www.harrisvilletwpohio.org") cur.website = "https://harrisvilletwpohio.org";
       continue;
     }
     const rh = t.match(/^([A-Z][A-Z /&.,'-]+):$/);
@@ -363,7 +369,7 @@ async function elections(): Promise<number> {
 const JOBS: Record<string, Job[]> = {
   census: [
     { key: "census-county", name: "U.S. Census Bureau population estimates (Medina County)", url: CENSUS_COUNTY, run: censusCounty },
-    { key: "census-acs", name: "U.S. Census Bureau American Community Survey 5-year estimates, 2020 to 2024", url: ACS_URL, run: censusAcs },
+    { key: "census-acs", name: "U.S. Census Bureau American Community Survey 5-year estimates, 2020 to 2024", url: ACS_INFO_URL, run: censusAcs },
     { key: "census-cities", name: "U.S. Census Bureau population estimates (cities)", url: CENSUS_CITIES, run: censusCities },
   ],
   councils: [

@@ -359,3 +359,17 @@ Sample ballots for 30 precincts (one per community, plus all four Liverpool Town
 | Liverpool TP A candidate vs official PDF sample ballot | For County Recorder (Unexpired term ending 12-31-2028) | Sharon A. Ray | Sharon A. Ray | MATCH | https://lookup.boe.ohio.gov/vtrapp/medina/getballot.aspx?elect=20261103g_webeix0&prsid=083___1&bpty=X |
 | Liverpool TP A issue text vs official PDF | PROPOSED TAX LEVY (RENEWAL) Liverpool Township | A renewal of a tax for the benefit of Liverpool Township for... | found | MATCH | https://lookup.boe.ohio.gov/vtrapp/medina/getballot.aspx?elect=20261103g_webeix0&prsid=083___1&bpty=X |
 | Liverpool TP A issue text vs official PDF | PROPOSED TAX LEVY (ADDITIONAL) Liverpool Township | An additional tax for the benefit of Liverpool Township for ... | found | MATCH | https://lookup.boe.ohio.gov/vtrapp/medina/getballot.aspx?elect=20261103g_webeix0&prsid=083___1&bpty=X |
+
+## County budget by year (added Oct 25, 2026)
+
+General Fund final budget, actual spending, final budgeted revenue and actual revenue for 2020 through 2024 come from the "Statement of Revenues, Expenditures and Changes in Fund Balance, Budget (Non-GAAP Basis) and Actual, General Fund" in each year's audited Medina County report on ohioauditor.gov. Each figure links to the PDF page (#page=N). Every row was checked so that final budget minus actual equals the printed variance, and the 2024 row matches the county's 2024 ACFR (p. 24 printed). The county auditor's own year end budget reports (auditor.medinacounty.gov) are behind a bot challenge and could not be fully verified against a public URL, so 2025 and 2026 are not shown yet.
+
+| Year | Final budget | Actual spending | PDF page |
+|---|---|---|---|
+| 2024 | 62,782,874 | 58,452,762 | https://ohioauditor.gov/auditsearch/Reports/2026/Medina_County_24-Medina_FINAL.pdf#page=72 |
+| 2023 | 57,792,029 | 53,883,873 | https://ohioauditor.gov/auditsearch/Reports/2025/Medina_County_23-Medina_FINAL.pdf#page=66 |
+| 2022 | 53,501,292 | 45,128,161 | https://ohioauditor.gov/auditsearch/Reports/2023/Medina_County_22-Medina_FINAL.pdf#page=64 |
+| 2021 | 53,494,694 | 47,074,002 | https://ohioauditor.gov/auditsearch/Reports/2022/Medina_County_21-Medina_FINAL.pdf#page=64 |
+| 2020 | 45,299,385 | 40,126,490 | https://ohioauditor.gov/auditsearch/Reports/2021/Medina_County_20-Medina_FINAL.pdf#page=60 |
+
+ACS figures on /local now link to the matching data.census.gov table and geography, because Census API links without a key send visitors to a "missing key" page.
