@@ -75,7 +75,7 @@ function searchLike(query: string, limit: number, type?: string): SearchResult[]
         entityType: "person",
         entityId: p.id,
         title: p.displayName,
-        snippet: [p.title, p.department].filter(Boolean).join(" — "),
+        snippet: [p.title, p.department].filter(Boolean).join(" · "),
         department: p.department,
         year: null,
       });
@@ -108,7 +108,7 @@ function searchLike(query: string, limit: number, type?: string): SearchResult[]
         entityType: "salary",
         entityId: s.id,
         title: s.rawName,
-        snippet: `${s.title ?? ""} — ${s.department ?? ""} — $${s.salary.toLocaleString()}`,
+        snippet: `${s.title ?? ""} · ${s.department ?? ""} · $${s.salary.toLocaleString()}`,
         department: s.department,
         year: String(s.year),
       });
@@ -139,7 +139,7 @@ function searchLike(query: string, limit: number, type?: string): SearchResult[]
         entityType: "vendor",
         entityId: v.id,
         title: v.vendorName,
-        snippet: `${v.description ?? ""} — ${v.department ?? ""} — $${v.amount.toLocaleString()}`,
+        snippet: `${v.description ?? ""} · ${v.department ?? ""} · $${v.amount.toLocaleString()}`,
         department: v.department,
         year: null,
       });
@@ -236,7 +236,7 @@ function searchLike(query: string, limit: number, type?: string): SearchResult[]
         entityType: "campaign",
         entityId: c.id,
         title: c.candidateName,
-        snippet: [c.committeeName, c.office, c.party, c.year ? String(c.year) : null].filter(Boolean).join(" — "),
+        snippet: [c.committeeName, c.office, c.party, c.year ? String(c.year) : null].filter(Boolean).join(" · "),
         department: null,
         year: c.year ? String(c.year) : null,
       });
@@ -269,8 +269,8 @@ function searchLike(query: string, limit: number, type?: string): SearchResult[]
       results.push({
         entityType: "bill",
         entityId: b.id,
-        title: `${b.billNumber ?? ""} — ${b.title}`,
-        snippet: [b.statusLabel, b.chamber, b.description?.substring(0, 100)].filter(Boolean).join(" — "),
+        title: `${b.billNumber ?? ""} · ${b.title}`,
+        snippet: [b.statusLabel, b.chamber, b.description?.substring(0, 100)].filter(Boolean).join(" · "),
         department: b.chamber,
         year: b.lastActionDate?.substring(0, 4) ?? null,
       });
@@ -301,7 +301,7 @@ function searchLike(query: string, limit: number, type?: string): SearchResult[]
       results.push({
         entityType: "resolution",
         entityId: r.id,
-        title: `${r.resolutionNumber ?? ""} — ${r.title}`,
+        title: `${r.resolutionNumber ?? ""} · ${r.title}`,
         snippet: r.description?.substring(0, 150) ?? "",
         department: null,
         year: r.date?.substring(0, 4) ?? null,

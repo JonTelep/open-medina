@@ -82,7 +82,7 @@ export default function PeoplePage() {
       ) : (
         <>
           <p className="text-sm text-[var(--muted)]">
-            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+            Showing {page * PAGE_SIZE + 1} to {Math.min((page + 1) * PAGE_SIZE, total)} of {total}
           </p>
           <DataTable
             data={people}

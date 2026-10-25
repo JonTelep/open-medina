@@ -1,0 +1,191 @@
+"use client";
+
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+
+interface AskResult {
+  title: string;
+  url: string;
+  domain: string;
+  snippet: string;
+  jurisdiction: "city" | "county" | "state" | "federal" | "other";
+  sourceLabel: string;
+  boosted: boolean;
+}
+
+interface AskResponse {
+  query: string;
+  scope: "medina-county-oh" | "us-federal-fallback";
+  results: AskResult[];
+  cached: boolean;
+  fetchedAt: string;
+}
+
+const SUGGESTED = [
+  "How do I register to vote in Medina County?",
+  "Do I need a permit to build a fence in the city of Medina?",
+  "What property tax levies are on the ballot in Medina County?",
+  "Where is the Medina County Board of Elections?",
+  "How do I get a building permit in Brunswick?",
+  "When is trash pickup in Wadsworth?",
+];
+
+const BADGE: Record<AskResult["jurisdiction"], string> = {
+  city: "bg-emerald-100 text-emerald-800",
+  county: "bg-blue-100 text-blue-800",
+  state: "bg-amber-100 text-amber-800",
+  federal: "bg-purple-100 text-purple-800",
+  other: "bg-gray-100 text-gray-700",
+};
+
+const BADGE_TEXT: Record<AskResult["jurisdiction"], string> = {
+  city: "City",
+  county: "County",
+  state: "Ohio",
+  federal: "Federal",
+  other: "Other",
+};
+
+export function AskMedina({ initialQuery = "", syncUrl = false }: { initialQuery?: string; syncUrl?: boolean }) {
+  const router = useRouter();
+  const [query, setQuery] = useState(initialQuery);
+  const [data, setData] = useState<AskResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const ran = useRef<string | null>(null);
+
+  async function ask(q: string) {
+    const question = q.trim();
+    if (question.length < 3) return;
+    setQuery(question);
+    setLoading(true);
+    setError(null);
+    setData(null);
+    if (syncUrl) router.replace(`/search?q=${encodeURIComponent(question)}`, { scroll: false });
+    try {
+      const res = await fetch(`/api/ask?q=${encodeURIComponent(question)}`);
+      const body = await res.json();
+      if (!res.ok) setError(body.error ?? "Something went wrong. Please try again.");
+      else setData(body);
+    } catch {
+      setError("Could not reach the server. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (initialQuery && ran.current !== initialQuery) {
+      ran.current = initialQuery;
+      ask(initialQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    ask(query);
+  }
+
+  return (
+    <section className="space-y-4" aria-labelledby="ask-medina-heading">
+      <div>
+        <h2 id="ask-medina-heading" className="text-xl font-semibold sm:text-2xl">
+          Ask Medina
+        </h2>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          Ask a question about local government in Medina County, Ohio, including the cities of Medina, Brunswick and
+          Wadsworth. We search official government websites and link you straight to the source.
+        </p>
+      </div>
+
+      <form onSubmit={onSubmit} className="flex w-full flex-col gap-2 sm:flex-row" role="search">
+        <label htmlFor="ask-medina-input" className="sr-only">
+          Your question about Medina County, Ohio
+        </label>
+        <input
+          id="ask-medina-input"
+          type="search"
+          value={query}
+          maxLength={200}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="e.g. Do I need a permit for a fence in Medina?"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-base focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-light)]"
+        />
+        <button
+          type="submit"
+          disabled={loading || query.trim().length < 3}
+          className="rounded-lg bg-[var(--accent)] px-6 py-3 text-base font-medium text-white hover:bg-blue-800 disabled:opacity-60"
+        >
+          {loading ? "Searching..." : "Ask"}
+        </button>
+      </form>
+
+      <div>
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Try asking</p>
+        <div className="flex flex-wrap gap-2">
+          {SUGGESTED.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => ask(s)}
+              className="rounded-full border border-[var(--border)] bg-white px-3 py-1.5 text-left text-sm text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        This is not legal advice. Results come from government websites and may be out of date. Always confirm details
+        with the official office before you rely on them.
+      </p>
+
+      <div aria-live="polite">
+        {loading && <p className="text-sm text-[var(--muted)]">Searching official sources...</p>}
+        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+        {data && (
+          <div className="space-y-3">
+            <p className="text-sm text-[var(--muted)]">
+              {data.results.length} result{data.results.length === 1 ? "" : "s"} for &ldquo;{data.query}&rdquo;
+              {data.scope === "us-federal-fallback" ? " (includes federal sources)" : ""}
+            </p>
+            {data.results.length === 0 && (
+              <p className="text-sm text-[var(--muted)]">
+                No official sources found. Try rewording your question or naming the city or office.
+              </p>
+            )}
+            <ul className="space-y-3">
+              {data.results.map((r) => (
+                <li key={r.url} className="rounded-lg border border-[var(--border)] bg-white p-4 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className={`rounded-full px-2 py-0.5 font-medium ${BADGE[r.jurisdiction]}`}>
+                      {BADGE_TEXT[r.jurisdiction]}
+                    </span>
+                    <span className="break-all text-[var(--muted)]">{r.domain}</span>
+                    {r.boosted && <span className="text-[var(--muted)]">· {r.sourceLabel}</span>}
+                  </div>
+                  <h3 className="mt-2 text-base font-semibold leading-snug">
+                    <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">
+                      {r.title}
+                    </a>
+                  </h3>
+                  {r.snippet && <p className="mt-1 text-sm text-[var(--foreground)]/80">{r.snippet}</p>}
+                  <a
+                    href={r.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 block truncate text-xs text-[var(--muted)] hover:underline"
+                  >
+                    {r.url}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}

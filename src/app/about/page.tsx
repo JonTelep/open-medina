@@ -13,7 +13,7 @@ export default function AboutPage() {
         <p>
           OpenMedina makes Medina County government data accessible and
           searchable for every resident. Salaries, spending, meeting minutes,
-          campaign finance, and state legislation — all in one place.
+          campaign finance, and state legislation, all in one place.
         </p>
       </div>
 

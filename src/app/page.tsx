@@ -3,6 +3,9 @@ import { StatCard } from "@/components/stat-card";
 import { getDashboardStats } from "@/db/queries/stats";
 import { formatMoney } from "@/components/money-format";
 import Link from "next/link";
+import { AskMedina } from "@/components/ask-medina";
+
+export const dynamic = "force-dynamic";
 
 export default function HomePage() {
   const stats = getDashboardStats();
@@ -13,11 +16,16 @@ export default function HomePage() {
         <h1 className="text-3xl font-bold">OpenMedina</h1>
         <p className="mt-1 text-lg text-[var(--foreground)]">Government Transparency for Medina County</p>
         <p className="mt-2 text-[var(--muted)]">
-          Search public financial data — salaries, spending, meetings, campaign finance, and legislation
+          Search public financial data: salaries, spending, meetings, campaign finance, and legislation
         </p>
       </div>
 
+      <div className="mx-auto max-w-3xl rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm sm:p-6">
+        <AskMedina />
+      </div>
+
       <div className="mx-auto max-w-2xl">
+        <p className="mb-2 text-sm text-[var(--muted)]">Or search the OpenMedina database</p>
         <SearchBar large />
       </div>
 
@@ -32,7 +40,7 @@ export default function HomePage() {
           value={stats.totalSalaryRecords.toLocaleString()}
           sub={
             stats.salaryYearMin && stats.salaryYearMax
-              ? `${stats.salaryYearMin}–${stats.salaryYearMax}`
+              ? `${stats.salaryYearMin} to ${stats.salaryYearMax}`
               : undefined
           }
         />

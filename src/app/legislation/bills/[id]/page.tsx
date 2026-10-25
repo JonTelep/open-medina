@@ -169,7 +169,7 @@ function MedinaVoteCard({ rollCall }: { rollCall: RollCall }) {
                 </span>
               </span>
               {wrongChamber && !vote ? (
-                <span className="text-xs text-gray-400">N/A — {leg.chamber} vote</span>
+                <span className="text-xs text-gray-400">N/A · {leg.chamber} vote</span>
               ) : vote ? (
                 <span className={`flex items-center gap-1.5 font-medium ${VOTE_COLORS[vote.vote]}`}>
                   <span
@@ -295,7 +295,7 @@ export default function BillDetailPage() {
                   <div>
                     <h4 className="font-medium">{rc.description}</h4>
                     <p className="text-sm text-[var(--muted)]">
-                      {rc.chamber} — {rc.date}
+                      {rc.chamber} · {rc.date}
                     </p>
                   </div>
                   <span
