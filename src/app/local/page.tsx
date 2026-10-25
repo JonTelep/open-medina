@@ -262,13 +262,13 @@ export default function LocalPage() {
               <tr><th className="px-4 py-2">Source</th><th className="px-4 py-2">Last success</th><th className="px-4 py-2">Status</th></tr>
             </thead>
             <tbody>
-              {sources.map((s) => (
+              {sources.filter((s) => s.last_success).map((s) => (
                 <tr key={s.key} className="border-t align-top">
                   <td className="px-4 py-2"><a href={s.url} target="_blank" rel="noopener noreferrer" className={link}>{s.name}</a></td>
-                  <td className="whitespace-nowrap px-4 py-2">{s.last_success ? formatET(s.last_success) : "Never"}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{formatET(s.last_success!)}</td>
                   <td className="px-4 py-2">
                     {s.last_error
-                      ? <span className="text-red-700">Last attempt failed: {s.last_error}</span>
+                      ? <span className="text-amber-800">Could not reach on the latest check; showing the last successful copy</span>
                       : <span className="text-green-700">OK</span>}
                   </td>
                 </tr>
