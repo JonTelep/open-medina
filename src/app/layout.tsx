@@ -3,6 +3,7 @@ import "./globals.css";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { SITE } from "@/lib/site";
+import { liveSections } from "@/lib/sections";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
-        <Nav />
+        <Nav links={liveSections().map(({ href, label }) => ({ href, label }))} />
         <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
           {children}
         </main>

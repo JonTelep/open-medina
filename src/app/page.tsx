@@ -9,18 +9,10 @@ import { MEDINA_FACTS } from "@/lib/site";
 import { getOfficials, getPopulation, getAgendas, lastUpdated } from "@/lib/local-data";
 import { formatET } from "@/components/last-updated";
 import { ReportLink } from "@/components/forms";
+import { liveSections } from "@/lib/sections";
 
 export const dynamic = "force-dynamic";
 
-const SECTIONS = [
-  { href: "/local", title: "Local Government", body: "Every city, village and township in the county, starting with Liverpool Township, plus councils and agendas." },
-  { href: "/people", title: "People Directory", body: "Browse employees, officials, and vendors. See salary history, payment records, and connections." },
-  { href: "/money", title: "Money Flow", body: "Explore spending by department, top vendors, and payment timelines with interactive charts." },
-  { href: "/docket", title: "Weekly Docket", body: "Browse weekly payment batches approved by commissioners. Filter by vendor, department, or amount." },
-  { href: "/meetings", title: "Meeting Minutes", body: "Search commissioner meeting minutes. See who was mentioned and what was discussed." },
-  { href: "/donations", title: "Campaign Finance", body: "Explore campaign contributions by candidate or donor. See who funds local elections." },
-  { href: "/legislation", title: "State Legislation", body: "Track Ohio bills and see how Medina County's representatives vote. Browse county resolutions." },
-];
 
 export default function HomePage() {
   const stats = getDashboardStats();
@@ -82,11 +74,11 @@ export default function HomePage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 id="explore-heading" className="text-2xl font-bold">Explore public records</h2>
-            <p className="mt-1 text-[var(--muted)]">Salaries, spending, meetings, campaign finance, and legislation in one place.</p>
+            <p className="mt-1 text-[var(--muted)]">Every section here is built from official public records.</p>
           </div>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SECTIONS.map((s) => (
+          {liveSections().filter((s) => s.title).map((s) => (
             <Link
               key={s.href}
               href={s.href}
@@ -127,16 +119,16 @@ export default function HomePage() {
         <section aria-labelledby="stats-heading">
           <h2 id="stats-heading" className="text-2xl font-bold">Records collected</h2>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            <StatCard label="People" value={stats.totalPeople.toLocaleString()} sub="Tracked entities" />
-            <StatCard
+            {stats.totalPeople > 0 && <StatCard label="People" value={stats.totalPeople.toLocaleString()} sub="Tracked entities" />}
+            {stats.totalSalaryRecords > 0 && <StatCard
               label="Salary Records"
               value={stats.totalSalaryRecords.toLocaleString()}
               sub={stats.salaryYearMin && stats.salaryYearMax ? `${stats.salaryYearMin} to ${stats.salaryYearMax}` : undefined}
-            />
-            <StatCard label="Docket Payments" value={stats.totalDocketItems.toLocaleString()} sub={`${stats.totalDockets} dockets`} />
-            <StatCard label="Total Spending" value={formatMoney(stats.totalSpending)} sub="Docket payments" />
-            <StatCard label="Campaigns" value={stats.totalCampaigns.toLocaleString()} sub={`${formatMoney(stats.totalDonationAmount)} donated`} />
-            <StatCard label="Bills Tracked" value={stats.totalBills.toLocaleString()} sub={`${stats.totalResolutions} resolutions`} />
+            />}
+            {stats.totalDocketItems > 0 && <StatCard label="Docket Payments" value={stats.totalDocketItems.toLocaleString()} sub={`${stats.totalDockets} dockets`} />}
+            {stats.totalDocketItems > 0 && <StatCard label="Total Spending" value={formatMoney(stats.totalSpending)} sub="Docket payments" />}
+            {stats.totalCampaigns > 0 && <StatCard label="Campaigns" value={stats.totalCampaigns.toLocaleString()} sub={`${formatMoney(stats.totalDonationAmount)} donated`} />}
+            {stats.totalBills > 0 && <StatCard label="Bills Tracked" value={stats.totalBills.toLocaleString()} sub={`${stats.totalResolutions} resolutions`} />}
           </div>
         </section>
       )}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "./logo";
 import { NewsletterForm } from "./forms";
+import { liveSections } from "@/lib/sections";
 
 const local = [
   { href: "https://www.medinacounty.gov", label: "Medina County" },
@@ -35,16 +36,7 @@ export function Footer() {
           <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--gold)]">Explore</h2>
           <ul className="mt-3 grid grid-cols-2 gap-2 text-sm">
             {[
-              ["/search", "Ask Medina"],
-              ["/ballot", "What's on my ballot"],
-              ["/local", "Local Government"],
-              ["/people", "People"],
-              ["/money", "Money"],
-              ["/docket", "Docket"],
-              ["/meetings", "Meetings"],
-              ["/donations", "Donations"],
-              ["/legislation", "Legislation"],
-              ["/about", "About"],
+              ...liveSections().map((s) => [s.href, s.footerLabel ?? s.label]),
               ["/contact", "Report an issue"],
             ].map(([href = "", label]) => (
               <li key={href}>

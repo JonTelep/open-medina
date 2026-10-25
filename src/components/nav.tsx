@@ -5,20 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "./logo";
 
-const links = [
-  { href: "/search", label: "Ask Medina" },
-  { href: "/ballot", label: "Ballot" },
-  { href: "/local", label: "Local" },
-  { href: "/people", label: "People" },
-  { href: "/money", label: "Money" },
-  { href: "/docket", label: "Docket" },
-  { href: "/meetings", label: "Meetings" },
-  { href: "/donations", label: "Donations" },
-  { href: "/legislation", label: "Legislation" },
-  { href: "/about", label: "About" },
-];
-
-export function Nav() {
+export function Nav({ links }: { links: { href: string; label: string }[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
