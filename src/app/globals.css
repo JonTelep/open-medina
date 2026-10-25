@@ -34,3 +34,4 @@ table tr, table td, table th, thead, tbody { border-color: var(--border-soft) !i
 }
 
 html, body { max-width: 100%; overflow-x: clip; }
+[id] { scroll-margin-top: 5rem; }

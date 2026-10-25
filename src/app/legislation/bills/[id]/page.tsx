@@ -38,7 +38,7 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
         <p className="mt-2 flex flex-wrap gap-x-4 text-sm">
           {bill.url && <a href={bill.url} target="_blank" rel="noopener noreferrer" className={link}>LegiScan bill page</a>}
           {ohio && <a href={ohio} target="_blank" rel="noopener noreferrer" className={link}>Official bill page, legislature.ohio.gov</a>}
-          <span className="text-xs text-[var(--muted)]">verified {formatVerified(bill.updatedAt)}</span>
+          <span className="text-xs text-[var(--muted)]">updated {formatVerified(bill.updatedAt)}</span>
         </p>
       </div>
 

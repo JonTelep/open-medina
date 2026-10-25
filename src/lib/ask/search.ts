@@ -28,6 +28,8 @@ export interface AskResponse {
   query: string;
   scope: "medina-county-oh" | "us-federal-fallback";
   results: AskResult[];
+  /** Official website of the city, village or township the question names. */
+  official?: { label: string; url: string } | null;
   cached: boolean;
   fetchedAt: string;
 }
@@ -109,6 +111,7 @@ function toResult(w: FirecrawlWeb): AskResult | null {
 
 /** Drop results from other Ohio counties' pages on shared hosts (e.g. boe.ohio.gov/hardin). */
 function inScope(r: AskResult) {
+  if (r.domain.endsWith(".boe.ohio.gov")) return /^medina\./.test(r.domain);
   if (r.domain === "boe.ohio.gov") return /boe\.ohio\.gov\/medina/i.test(r.url);
   if (r.domain === "codelibrary.amlegal.com") return /\/codes\/medina\//i.test(r.url);
   return true;
@@ -131,8 +134,13 @@ export async function askMedina(rawQuery: string): Promise<AskResponse> {
   const now = Date.now();
 
   const hit = getStmt.get(key, now) as { response: string; created_at: number } | undefined;
+  const named = federal ? null : targetedSource(query);
+  const official =
+    named && ["city", "village", "township"].includes(named.jurisdiction)
+      ? { label: named.label, url: `https://${named.domain}/` }
+      : null;
   if (hit) {
-    return { ...(JSON.parse(hit.response) as AskResponse), cached: true };
+    return { ...(JSON.parse(hit.response) as AskResponse), official, cached: true };
   }
 
   const k = "8";
@@ -154,9 +162,10 @@ export async function askMedina(rawQuery: string): Promise<AskResponse> {
   add(await firecrawl({ query: contextual, k, jurisdiction: "us-oh" }));
 
   // 2) If no boosted local source came back, ask the most relevant one directly
-  if (!federal && !results.some((r) => r.boosted)) {
-    const t = targetedSource(query);
-    if (t) {
+  // (also when the question names a community whose own site did not come back)
+  const t = federal ? null : targetedSource(query);
+  if (t && !results.some((r) => r.domain === t.domain || r.domain.endsWith("." + t.domain))) {
+    {
       try {
         add(await firecrawl({ query: contextual, k: "5", jurisdiction: "us-oh", domain: t.domain }));
       } catch (e) {
@@ -177,11 +186,17 @@ export async function askMedina(rawQuery: string): Promise<AskResponse> {
     }
   }
 
-  results = rank(results).slice(0, 12);
+  results = rank(results);
+  if (t) {
+    const own = (r: AskResult) => r.domain === t.domain || r.domain.endsWith("." + t.domain);
+    results = [...results.filter(own), ...results.filter((r) => !own(r))];
+  }
+  results = results.slice(0, 12);
   const response: AskResponse = {
     query,
     scope,
     results,
+    official,
     cached: false,
     fetchedAt: new Date(now).toISOString(),
   };

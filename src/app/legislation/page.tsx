@@ -1,3 +1,5 @@
+import { ReportLink } from "@/components/forms";
+import { LastUpdated } from "@/components/last-updated";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/og";
 import Link from "next/link";
@@ -41,6 +43,19 @@ export default async function LegislationPage({ searchParams }: { searchParams: 
     <div className="space-y-10">
       <div>
         <h1 className="text-3xl font-bold">State Legislation</h1>
+        <div className="mt-2">
+      <div className="mb-3 flex flex-wrap items-center gap-x-4">
+        <LastUpdated scrapers={["legislation"]} label="Last checked against LegiScan" />
+        <ReportLink item="legislation" />
+      </div>
+      <p className="mb-4 max-w-3xl text-sm text-[var(--muted)]">
+        Bills in the current Ohio General Assembly that are sponsored by legislators representing Medina County (House
+        Districts 66 and 67, Senate District 22) or that mention Medina County. Source:{" "}
+        <a className="underline" href="https://legiscan.com/OH" target="_blank" rel="noopener noreferrer">LegiScan</a>
+        , with official bill text at{" "}
+        <a className="underline" href="https://www.legislature.ohio.gov/legislation" target="_blank" rel="noopener noreferrer">legislature.ohio.gov</a>.
+      </p>
+              </div>
       </div>
 
       {legs.length > 0 && (
@@ -61,7 +76,7 @@ export default async function LegislationPage({ searchParams }: { searchParams: 
       <section id="bills" className="space-y-4">
         <h2 className="text-xl font-semibold">Bills</h2>
         <form method="get" action="/legislation#bills" className="flex flex-wrap items-end gap-3">
-          <label className="flex min-w-0 flex-1 flex-col text-xs font-medium text-[var(--muted)]">
+          <label className="flex min-w-0 basis-full flex-col text-xs sm:basis-auto sm:flex-1 font-medium text-[var(--muted)]">
             Search
             <input name="search" defaultValue={search} placeholder="Bill number or topic" className="mt-1 min-w-0 rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]" />
           </label>
@@ -97,7 +112,7 @@ export default async function LegislationPage({ searchParams }: { searchParams: 
                 <p className="mt-1 flex flex-wrap gap-x-3 text-xs">
                   {b.url && <a href={b.url} target="_blank" rel="noopener noreferrer" className={link}>LegiScan</a>}
                   {ohioBillUrl(b.billNumber) && <a href={ohioBillUrl(b.billNumber)!} target="_blank" rel="noopener noreferrer" className={link}>legislature.ohio.gov</a>}
-                  <span className="text-[var(--muted)]">verified {formatVerified(b.updatedAt)}</span>
+                  <span className="text-[var(--muted)]">updated {formatVerified(b.updatedAt)}</span>
                 </p>
               </li>
             ))}

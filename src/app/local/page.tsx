@@ -17,6 +17,16 @@ export const metadata: Metadata = pageMeta(
 const ORDER = ["Medina County", "City of Medina", "City of Brunswick", "City of Wadsworth"];
 const COUNCILS = ["City of Medina", "City of Brunswick", "City of Wadsworth"];
 const link = "text-[var(--royal)] underline";
+function fmtDay(d: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  return new Date(d + "T12:00:00-04:00").toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric" }); // sourced-ok: date
+}
+const CITY_SITES: Record<string, string> = {
+  "City of Medina": "https://medinaoh.org/",
+  "City of Brunswick": "https://brunswick.oh.us/",
+  "City of Wadsworth": "https://wadsworthcity.com/",
+  "City of Rittman": "https://www.rittman.com/",
+};
 
 export default function LocalPage() {
   const pop = getPopulation();
@@ -138,13 +148,13 @@ export default function LocalPage() {
             {juris2.map((j, i) => {
               const people = dirOfficials.filter((o) => o.jurisdiction === j.name);
               return (
-                <details key={j.name} open={i === 0} className="min-w-0 rounded-xl border border-[var(--royal)] bg-white p-4 open:border-t-4 open:border-t-[var(--gold)]">
+                <details key={j.name} open={i === 0} className="group min-w-0 rounded-xl border border-[var(--royal)] bg-white p-4 open:border-t-4 open:border-t-[var(--gold)]">
                   <summary className="cursor-pointer list-none">
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="font-semibold text-[var(--navy)]">{j.name}{j.name === "Liverpool Township" ? " (Valley City)" : ""}</span>
                       {j.population != null && <Sourced block className="shrink-0 text-right text-sm tabular-nums" value={`${fmtNum(j.population)} people`} url={j.source_url} verifiedAt={j.verified_at} />}
                     </div>
-                    <span className="text-xs capitalize text-[var(--muted)]">{j.kind}</span>
+                    <span className="text-xs text-[var(--muted)]"><span className="capitalize">{j.kind}</span><span className="text-[var(--royal)] group-open:hidden"> · Show officials and links ›</span></span>
                   </summary>
                   {j.pop_note && <p className="mt-2 text-xs text-[var(--muted)]">{j.pop_note}</p>}
                   {people.length > 0 && (
@@ -157,8 +167,11 @@ export default function LocalPage() {
                       ))}
                     </ul>
                   )}
+                  {COUNCILS.includes(j.name) && officials.some((o) => o.jurisdiction === j.name && o.source_key !== "county-directory") && (
+                    <p className="mt-3 text-sm"><a href="#councils" className={link}>See the {j.name.replace("City of ", "")} City Council members</a></p>
+                  )}
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                    {j.website && <a href={j.website} target="_blank" rel="noopener noreferrer" className={link}>Official website</a>}
+                    {(j.website ?? CITY_SITES[j.name]) && <a href={(j.website ?? CITY_SITES[j.name])!} target="_blank" rel="noopener noreferrer" className={link}>Official website</a>}
                     <ReportLink item={`Local Government: ${j.name}`} />
                   </div>
                 </details>
@@ -174,11 +187,12 @@ export default function LocalPage() {
 
       <NewsletterCta />
 
-      <section>
+      <section id="councils">
         <h2 className="text-2xl font-bold">City councils</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {COUNCILS.map((c) => {
             const list = officials.filter((o) => o.jurisdiction === c && o.source_key !== "county-directory");
+            if (!list.length) return null;
             return (
               <div key={c} className="rounded-xl border border-[var(--royal)] border-t-4 border-t-[var(--gold)] bg-white p-5">
                 <h3 className="text-lg font-semibold text-[var(--navy)]">{c}</h3>
@@ -215,7 +229,7 @@ export default function LocalPage() {
                       <li key={a.url} className="py-2">
                         <a href={a.url} target="_blank" rel="noopener noreferrer" className="font-medium text-[var(--royal)] hover:underline">{a.title}</a>
                         <div className="text-xs text-[var(--muted)]">
-                          {a.meeting_date ?? "Date not listed"}
+                          {a.meeting_date ? fmtDay(a.meeting_date) : "Date not listed"}
                           {a.minutes_url && <> · <a href={a.minutes_url} target="_blank" rel="noopener noreferrer" className="underline">Minutes</a></>}
                         </div>
                       </li>
