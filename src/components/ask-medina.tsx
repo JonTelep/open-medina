@@ -8,7 +8,7 @@ interface AskResult {
   url: string;
   domain: string;
   snippet: string;
-  jurisdiction: "city" | "county" | "state" | "federal" | "other";
+  jurisdiction: "city" | "village" | "township" | "county" | "state" | "federal" | "other";
   sourceLabel: string;
   boosted: boolean;
 }
@@ -22,6 +22,7 @@ interface AskResponse {
 }
 
 const SUGGESTED = [
+  "When do the Liverpool Township trustees meet in Valley City?",
   "How do I register to vote in Medina County?",
   "Do I need a permit to build a fence in the city of Medina?",
   "What property tax levies are on the ballot in Medina County?",
@@ -32,6 +33,8 @@ const SUGGESTED = [
 
 const BADGE: Record<AskResult["jurisdiction"], string> = {
   city: "bg-emerald-100 text-emerald-800",
+  village: "bg-teal-100 text-teal-800",
+  township: "bg-lime-100 text-lime-800",
   county: "bg-blue-100 text-blue-800",
   state: "bg-amber-100 text-amber-800",
   federal: "bg-purple-100 text-purple-800",
@@ -40,6 +43,8 @@ const BADGE: Record<AskResult["jurisdiction"], string> = {
 
 const BADGE_TEXT: Record<AskResult["jurisdiction"], string> = {
   city: "City",
+  village: "Village",
+  township: "Township",
   county: "County",
   state: "Ohio",
   federal: "Federal",
@@ -104,8 +109,8 @@ export function AskMedina({
           Ask Medina
         </h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Ask a question about local government in Medina County, Ohio, including the cities of Medina, Brunswick and
-          Wadsworth. We search official government websites and link you straight to the source.
+          Ask a question about local government anywhere in Medina County, Ohio: the cities, the six villages,
+          and all 17 townships, from Liverpool Township in Valley City to York. We search official government websites and link you straight to the source.
         </p>
       </div>
 

@@ -114,7 +114,7 @@ function inScope(r: AskResult) {
   return true;
 }
 
-const J_RANK: Record<Jurisdiction, number> = { city: 4, county: 4, state: 2, federal: 1, other: 0 };
+const J_RANK: Record<Jurisdiction, number> = { city: 4, village: 4, township: 4, county: 4, state: 2, federal: 1, other: 0 };
 
 function rank(results: AskResult[]) {
   const weight = (r: AskResult) => (matchSource(r.url)?.weight ?? 0) * 10 + J_RANK[r.jurisdiction];

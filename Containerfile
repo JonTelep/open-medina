@@ -41,6 +41,7 @@ COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/src/db ./src/db
 COPY --from=builder /app/src/lib ./src/lib
 COPY --from=builder /app/src/scrapers ./src/scrapers
+COPY --from=builder /app/src/data ./src/data
 COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/tsconfig.json ./
 COPY --from=builder /app/package.json ./

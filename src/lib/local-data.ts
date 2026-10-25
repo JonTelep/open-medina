@@ -113,4 +113,14 @@ export function getAcs() {
   }
 }
 
+export function getJurisdictions() {
+  try {
+    return sqlite.prepare("SELECT * FROM local_jurisdictions ORDER BY sort").all() as {
+      name: string; kind: string; website: string | null; population: number | null; pop_year: number; pop_note: string | null;
+    }[];
+  } catch {
+    return [];
+  }
+}
+
 export { sqlite };

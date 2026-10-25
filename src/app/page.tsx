@@ -13,7 +13,7 @@ import { ReportLink } from "@/components/forms";
 export const dynamic = "force-dynamic";
 
 const SECTIONS = [
-  { href: "/local", title: "Local Government", body: "Population, city councils in Medina, Brunswick and Wadsworth, and recent meeting agendas." },
+  { href: "/local", title: "Local Government", body: "Every city, village and township in the county, starting with Liverpool Township, plus councils and agendas." },
   { href: "/people", title: "People Directory", body: "Browse employees, officials, and vendors. See salary history, payment records, and connections." },
   { href: "/money", title: "Money Flow", body: "Explore spending by department, top vendors, and payment timelines with interactive charts." },
   { href: "/docket", title: "Weekly Docket", body: "Browse weekly payment batches approved by commissioners. Filter by vendor, department, or amount." },

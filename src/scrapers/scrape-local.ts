@@ -261,6 +261,100 @@ async function medinaAgendas() {
   return saveAgendas("medina-agendas", "City of Medina", out);
 }
 
+// ── All jurisdictions: Medina County Public Officials Directory (official county PDF) ──
+export const COUNTY_DIRECTORY = "https://www.medinaco.org/wp-content/uploads/2026-Public-Officials-Directory_0926.pdf";
+const SUB_EST = "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv";
+sqlite.exec(`CREATE TABLE IF NOT EXISTS local_jurisdictions (
+  name TEXT PRIMARY KEY, kind TEXT NOT NULL, website TEXT, population INTEGER, pop_year INTEGER,
+  pop_note TEXT, sort INTEGER NOT NULL
+)`);
+const ROLE_HEADINGS: Record<string, string> = {
+  "MAYOR": "Mayor", "FISCAL OFFICER": "Fiscal Officer", "CLERK TREASURER": "Clerk Treasurer",
+  "CLERK OF COUNCIL": "Clerk of Council", "TRUSTEES": "Trustee", "COUNCIL MEMBERS": "Council Member",
+  "PRESIDENT OF COUNCIL": "President of Council", "COUNCIL PRESIDENT": "President of Council",
+};
+async function countyDirectory(): Promise<number> {
+  // medinaco.org challenges automated requests that identify themselves, so we do not fetch it on a
+  // schedule. This is a text copy of the official September 2026 PDF, retrieved Oct 24, 2026.
+  const { readFileSync } = await import("node:fs");
+  const text = readFileSync(`${process.cwd()}/src/data/county-directory-2026-09.txt`, "utf8");
+
+  type J = { name: string; kind: string; website?: string; people: { role: string; name: string }[] };
+  const js: J[] = [];
+  let cur: J | null = null;
+  let role: string | null = null;
+  for (const raw of text.split("\n")) {
+    const line = raw.replace(/[\x00-\x08\x0b-\x1f]/g, "");
+    const t = line.trim();
+    const head = t.match(/^(VILLAGE OF [A-Z ]+|CITY OF [A-Z]+|[A-Z ]+ TOWNSHIP)$/);
+    if (head && line.startsWith("  ")) {
+      const h = head[1]!;
+      const title = (x: string) => x.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+      const name = h.startsWith("VILLAGE OF ") ? `Village of ${title(h.slice(11))}` : h.startsWith("CITY OF ") ? `City of ${title(h.slice(8))}` : title(h);
+      cur = { name, kind: h.startsWith("VILLAGE") ? "village" : h.startsWith("CITY") ? "city" : "township", people: [] };
+      js.push(cur);
+      role = null;
+      continue;
+    }
+    if (!cur) continue;
+    if (!cur.website && /^(www\.)?[A-Za-z]+\.(org|com|net|gov|us|oh\.us)$/i.test(t)) {
+      cur.website = "https://" + t.toLowerCase().replace(/^www\./, "www.");
+      continue;
+    }
+    const rh = t.match(/^([A-Z][A-Z /&.,'-]+):$/);
+    if (rh) { role = ROLE_HEADINGS[rh[1]!] ?? null; continue; }
+    if (!role || !/^\s{1,8}\S/.test(line)) { if (!t) continue; if (!/^\s/.test(line)) role = null; continue; }
+    let nm = t.split(/\.{2,}|\uFFFD|\s{2,}|\d{3}-\d{3}/)[0]!.trim().replace(/[.\s]+$/, "");
+    let r = role;
+    const paren = nm.match(/ \((At-Large|Ward \d)\)$/);
+    if (paren) { nm = nm.slice(0, paren.index); r = `${role}, ${paren[1]}`; }
+    const comma = nm.indexOf(", ");
+    if (comma > 0) {
+      const extra = nm.slice(comma + 2);
+      if (/clerk/i.test(extra)) r = "Clerk of Council";
+      if (!/^(Jr|Sr|II|III)\b/.test(extra)) nm = nm.slice(0, comma);
+    }
+    if (!/^[A-Z][A-Za-z.'-]+( [A-Z(][A-Za-z.'()-]*\.?)+(,? (Jr|Sr|II|III)\.?)?$/.test(nm) || /position|vacant|not currently/i.test(nm)) continue;
+    cur.people.push({ role: r, name: nm.replace(/\.\.$/, ".") });
+  }
+  const townships = js.filter((j) => j.kind === "township");
+  if (townships.length !== 17) throw new Error(`Expected 17 townships in county directory, found ${townships.length}`);
+
+  // Census sub-county estimates: townships (SUMLEV 061) and places (SUMLEV 162).
+  const csv = await get(SUB_EST);
+  const [hdr, ...rows] = csv.trim().split(/\r?\n/).map((l) => l.split(","));
+  const h = hdr!;
+  const col = (r: string[], c: string) => r[h.indexOf(c)]!;
+  const pop = (pred: (r: string[]) => boolean) => rows.find(pred);
+  const insJ = sqlite.prepare("INSERT OR REPLACE INTO local_jurisdictions VALUES (?, ?, ?, ?, 2025, ?, ?)");
+  const insO = sqlite.prepare("INSERT INTO local_officials (jurisdiction, body, name, role, term, source_key) VALUES (?, ?, ?, ?, NULL, 'county-directory')");
+  let n = 0;
+  sqlite.transaction(() => {
+    sqlite.prepare("DELETE FROM local_officials WHERE source_key = 'county-directory'").run();
+    js.forEach((j, i) => {
+      const base = j.name.replace(/^(Village|City) of /, "").replace(/ Township$/, "");
+      let p: string[] | undefined;
+      let note: string | null = null;
+      if (j.kind === "township")
+        p = pop((r) => col(r, "STATE") === "39" && col(r, "COUNTY") === "103" && col(r, "SUMLEV") === "061" && col(r, "NAME") === `${base} township`);
+      else {
+        const suffix = j.kind === "city" ? "city" : "village";
+        p = pop((r) => col(r, "STATE") === "39" && col(r, "SUMLEV") === "162" && col(r, "NAME").replace(/"/g, "") === `${base} ${suffix}`);
+        if (base === "Gloria Glens") p = pop((r) => col(r, "STATE") === "39" && col(r, "SUMLEV") === "162" && col(r, "NAME") === "Gloria Glens Park village");
+        if (base === "Rittman") {
+          const part = pop((r) => col(r, "STATE") === "39" && col(r, "COUNTY") === "103" && col(r, "SUMLEV") === "071" && col(r, "NAME") === "Rittman city (pt.)");
+          note = part ? `Total city population. About ${Number(col(part, "POPESTIMATE2025")).toLocaleString()} live in the Medina County part; most of Rittman is in Wayne County.` : null;
+        }
+      }
+      if (j.kind === "township") note = "Census township estimate. Includes unincorporated communities and any village that is part of the township.";
+      if (base === "Liverpool") note = "Census township estimate. Includes the unincorporated community of Valley City.";
+      insJ.run(j.name, j.kind, j.website ?? null, p ? Number(col(p, "POPESTIMATE2025")) : null, note, j.name.startsWith("Liverpool") ? -1 : i);
+      for (const o of j.people) { insO.run(j.name, j.kind === "township" ? "Board of Trustees" : "Village/City Council", o.name, o.role); n++; }
+    });
+  })();
+  return n;
+}
+
 // ── Elections (Medina County Board of Elections) ────────────────────
 const BOE = "https://boe.ohio.gov/medina/";
 async function elections(): Promise<number> {
@@ -285,6 +379,7 @@ const JOBS: Record<string, Job[]> = {
     { key: "wadsworth-agendas", name: "City of Wadsworth, Agenda Center", url: WADSWORTH_AGENDAS, run: wadsworthAgendas },
     { key: "medina-agendas", name: "City of Medina, Finance Committee agendas", url: medinaAgendaUrl(), run: medinaAgendas },
   ],
+  directory: [{ key: "county-directory", name: "Medina County Public Officials Directory, 2026", url: COUNTY_DIRECTORY, run: countyDirectory }],
   elections: [{ key: "boe-medina", name: "Medina County Board of Elections", url: BOE, run: elections }],
 };
 
