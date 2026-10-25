@@ -68,7 +68,7 @@ ROW_COUNT=$(node -e "
   db.close();
 " 2>/dev/null || echo "0")
 
-if [ "$ROW_COUNT" = "0" ]; then
+if [ "$ROW_COUNT" = "0" ] && [ "${SEED_SAMPLE_DATA:-0}" = "1" ]; then
   echo "Empty database detected, seeding with sample data..."
   npx tsx src/db/seed.ts
 fi

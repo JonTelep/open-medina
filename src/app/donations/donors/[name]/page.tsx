@@ -100,7 +100,7 @@ export default function DonorDetailPage() {
                 <div>
                   <p className="font-medium">{c.candidateName}</p>
                   <p className="text-sm text-[var(--muted)]">
-                    {[c.office, c.year].filter(Boolean).join(" — ")}
+                    {[c.office, c.year].filter(Boolean).join(" · ")}
                   </p>
                 </div>
                 <div className="text-right">

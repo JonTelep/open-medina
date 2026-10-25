@@ -3,10 +3,14 @@ import "./globals.css";
 import { Nav } from "@/components/nav";
 
 export const metadata: Metadata = {
-  title: "OpenMedina — Government Transparency for Medina County",
+  title: "OpenMedina: Government Transparency for Medina County",
   description:
-    "Public financial data for Medina County, Ohio — salaries, spending, meetings, campaign finance, and legislation in one searchable tool.",
+    "Public financial data for Medina County, Ohio: salaries, spending, meetings, campaign finance, and legislation in one searchable tool.",
 };
+
+export const dynamic = "force-dynamic";
+
+export const viewport = { width: "device-width", initialScale: 1 };
 
 export default function RootLayout({
   children,

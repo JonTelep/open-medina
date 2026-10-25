@@ -1,6 +1,7 @@
 "use client";
 
 import { SearchBar } from "@/components/search-bar";
+import { AskMedina } from "@/components/ask-medina";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
@@ -81,10 +82,16 @@ function SearchContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <div className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm sm:p-6">
+        <AskMedina initialQuery={q} syncUrl />
+      </div>
+
+      <div className="space-y-4">
+      <h2 className="text-lg font-semibold">OpenMedina database</h2>
       <SearchBar defaultValue={q} />
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-[var(--muted)]">Filter:</span>
         {["", "person", "salary", "vendor", "meeting", "donation", "campaign", "bill", "resolution"].map((t) => (
           <Link
@@ -116,7 +123,7 @@ function SearchContent() {
               href={linkForResult(result)}
               className="block rounded-lg border border-[var(--border)] bg-white p-4 transition-shadow hover:shadow-md"
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-col items-start justify-between gap-2 sm:flex-row">
                 <div className="min-w-0 flex-1">
                   <h3 className="font-medium">{result.title}</h3>
                   <p
@@ -142,6 +149,7 @@ function SearchContent() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
