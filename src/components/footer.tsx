@@ -5,7 +5,7 @@ import { NEWSLETTER_PITCH } from "./newsletter-cta";
 import { liveSections } from "@/lib/sections";
 
 const local = [
-  { href: "https://www.medinacounty.gov", label: "Medina County" },
+  { href: "https://www.medinaco.org", label: "Medina County" },
   { href: "https://www.medinaoh.org", label: "City of Medina" },
   { href: "https://www.brunswick.oh.us", label: "City of Brunswick" },
   { href: "https://www.wadsworthcity.com", label: "City of Wadsworth" },
