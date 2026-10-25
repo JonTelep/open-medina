@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     if (err instanceof UpstreamError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
+      return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: err.status });
     }
     console.error("Ask Medina error:", err);
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });

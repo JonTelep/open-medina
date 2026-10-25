@@ -11,7 +11,8 @@ export const metadata: Metadata = pageMeta(
   "/og-ballot.png",
 );
 
-export default function BallotPage() {
+export default async function BallotPage({ searchParams }: { searchParams: Promise<{ community?: string }> }) {
+  const { community } = await searchParams;
   const order = (j: string | null) => (j === "Liverpool Township" ? -1 : 0);
   const precincts = [...BALLOT.precincts].sort((a, b) => order(a.jurisdiction) - order(b.jurisdiction) || (a.jurisdiction ?? a.precinct).localeCompare(b.jurisdiction ?? b.precinct) || a.precinct.localeCompare(b.precinct));
   const withExplainers = precincts.map((p) => ({
@@ -39,7 +40,7 @@ export default function BallotPage() {
           </p>
         </div>
       </div>
-      <BallotPicker precincts={withExplainers} verifiedAt={BALLOT.retrieved} />
+      <BallotPicker precincts={withExplainers} verifiedAt={BALLOT.retrieved} initialGroup={community} />
       <NewsletterCta />
       <section className="max-w-3xl space-y-2 text-sm text-[var(--muted)]">
         <h2 className="text-lg font-semibold text-[var(--navy)]">Sources</h2>

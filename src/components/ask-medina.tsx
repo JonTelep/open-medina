@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { NewsletterCta } from "./newsletter-cta";
 
 interface AskResult {
   title: string;
@@ -13,11 +14,31 @@ interface AskResult {
   boosted: boolean;
 }
 
+interface LocalResult {
+  title: string;
+  href: string;
+  snippet: string;
+  kind: "ballot" | "community" | "official" | "bill" | "budget";
+  sourceUrl?: string;
+  sourceLabel?: string;
+}
+
+const LOCAL_BADGE: Record<LocalResult["kind"], string> = {
+  ballot: "Ballot",
+  community: "Community",
+  official: "Official",
+  bill: "Ohio bill",
+  budget: "Budget",
+};
+
 interface AskResponse {
   query: string;
   scope: "medina-county-oh" | "us-federal-fallback";
   results: AskResult[];
   official?: { label: string; url: string } | null;
+  local?: LocalResult[];
+  officialLinks?: { label: string; url: string }[];
+  resting?: boolean;
   cached: boolean;
   fetchedAt: string;
 }
@@ -169,8 +190,32 @@ export function AskMedina({
         {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
         {data && (
           <div className="space-y-3">
+            {!!data.local?.length && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-[var(--navy)]">From OpenMedina&apos;s verified data</p>
+                <ul className="space-y-2 sm:space-y-3">
+                  {data.local.map((r) => (
+                    <li key={r.href + r.title} className="min-w-0 overflow-hidden rounded-xl border border-[var(--gold)] bg-white p-3 shadow-sm sm:p-4">
+                      <div className="flex min-w-0 items-center gap-2 text-[11px] sm:text-xs">
+                        <span className="shrink-0 rounded-full bg-[var(--accent-light)] px-2 py-0.5 font-medium text-[var(--navy)]">{LOCAL_BADGE[r.kind]}</span>
+                        <span className="min-w-0 truncate text-[var(--muted)]">openmedina.org</span>
+                      </div>
+                      <h3 className="mt-1.5 break-words text-[15px] font-semibold leading-snug sm:mt-2 sm:text-base">
+                        <a href={r.href} className="text-[var(--accent)] hover:underline">{r.title}</a>
+                      </h3>
+                      {r.snippet && <p className="mt-1 line-clamp-2 break-words text-[13px] text-slate-700 sm:line-clamp-3 sm:text-sm">{r.snippet}</p>}
+                      {r.sourceUrl && (
+                        <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block truncate text-xs text-[var(--muted)] underline">
+                          Source: {r.sourceLabel ?? "official record"}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <p className="text-sm text-[var(--muted)]">
-              Official sources for &ldquo;{data.query}&rdquo;
+              {data.resting ? "Official websites for" : "Official sources for"} &ldquo;{data.query}&rdquo;
               {data.scope === "us-federal-fallback" ? " (includes federal sources)" : ""}
             </p>
             {data.official && (
@@ -187,7 +232,20 @@ export function AskMedina({
                 </p>
               </div>
             )}
-            {data.results.length === 0 && (
+            {data.resting && (
+              <div className="space-y-3">
+                <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  {(data.officialLinks ?? []).map((l) => (
+                    <li key={l.url}>
+                      <a href={l.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent)] underline">{l.label}</a>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm text-[var(--muted)]">Full government web search is resting until tomorrow.</p>
+                <NewsletterCta />
+              </div>
+            )}
+            {!data.resting && data.results.length === 0 && !data.local?.length && (
               <p className="text-sm text-[var(--muted)]">
                 No official sources found. Try rewording your question or naming the city or office.
               </p>

@@ -3,6 +3,7 @@
 import { spawn } from "node:child_process";
 import { appendFileSync, mkdirSync } from "node:fs";
 import Database from "better-sqlite3";
+import { checkFirecrawlCredits } from "./credit-alert";
 
 const DATA = process.env.DATA_DIR ?? "/app/data";
 const LOG = `${DATA}/logs/scrape.log`;
@@ -91,3 +92,8 @@ if (isEmpty() || needAcs || needBills || needDir) {
   lastElection = Date.now() - 6 * 3600_000 + 60_000; // first election check about a minute after start
 }
 setInterval(tick, 60_000);
+
+// Firecrawl credit usage alert: shortly after start, then every 6 hours.
+const creditCheck = () => checkFirecrawlCredits(log).catch((e) => log(`credit check error: ${e}`));
+setTimeout(creditCheck, 2 * 60_000);
+setInterval(creditCheck, 6 * 3600_000);
