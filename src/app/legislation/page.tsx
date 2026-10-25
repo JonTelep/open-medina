@@ -1,261 +1,115 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
+import { pageMeta } from "@/lib/og";
 import Link from "next/link";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Cell,
-} from "recharts";
+import { getBills, getLegislators } from "@/db/queries/legislation";
+import { ohioBillUrl } from "@/lib/legis-links";
+import { formatVerified } from "@/components/sourced";
+import { NewsletterCta } from "@/components/newsletter-cta";
 
-interface VotingStats {
-  total: number;
-  yea: number;
-  nay: number;
-  nv: number;
-  absent: number;
-}
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = pageMeta(
+  "/legislation",
+  "State Legislation",
+  "Ohio bills sponsored by Medina County's state legislators or that mention Medina County, each linked to LegiScan and legislature.ohio.gov.",
+  "/og-legislation.png",
+);
 
-interface Legislator {
-  id: number;
-  name: string;
-  party: string | null;
-  chamber: string | null;
-  district: string | null;
-  votingStats: VotingStats;
-}
+const PER_PAGE = 25;
+const STATUSES: [string, string][] = [["1", "Introduced"], ["2", "Engrossed"], ["3", "Enrolled"], ["4", "Passed"], ["5", "Vetoed"], ["6", "Dead"]];
+const link = "text-[var(--royal)] underline";
 
-interface Bill {
-  id: number;
-  billNumber: string | null;
-  title: string;
-  chamber: string | null;
-  status: number | null;
-  statusLabel: string | null;
-  lastActionDate: string | null;
-  lastAction: string | null;
-}
-
-interface Resolution {
-  id: number;
-  resolutionNumber: string | null;
-  title: string;
-  date: string | null;
-}
-
-interface StatusBreakdown {
-  status: number | null;
-  statusLabel: string | null;
-  count: number;
-}
-
-interface DashboardData {
-  stats: {
-    totalBills: number;
-    totalResolutions: number;
-    totalLegislators: number;
+export default async function LegislationPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const sp = await searchParams;
+  const search = sp.search?.slice(0, 100) || undefined;
+  const chamber = sp.chamber === "House" || sp.chamber === "Senate" ? sp.chamber : undefined;
+  const status = sp.status && /^[1-6]$/.test(sp.status) ? Number(sp.status) : undefined;
+  const page = Math.min(Math.max(parseInt(sp.page ?? "1", 10) || 1, 1), 100);
+  const rows = getBills({ search, chamber, status, limit: PER_PAGE + 1, offset: (page - 1) * PER_PAGE });
+  const list = rows.slice(0, PER_PAGE);
+  const hasNext = rows.length > PER_PAGE;
+  const legs = getLegislators();
+  const qs = (p: number) => {
+    const u = new URLSearchParams();
+    if (search) u.set("search", search);
+    if (chamber) u.set("chamber", chamber);
+    if (status) u.set("status", String(status));
+    u.set("page", String(p));
+    return `/legislation?${u}#bills`;
   };
-  legislators: Legislator[];
-  recentBills: Bill[];
-  recentResolutions: Resolution[];
-  statusBreakdown: StatusBreakdown[];
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  Introduced: "#3b82f6",
-  Engrossed: "#eab308",
-  Enrolled: "#a855f7",
-  Passed: "#22c55e",
-  Vetoed: "#ef4444",
-  Dead: "#6b7280",
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  Introduced: "bg-blue-100 text-blue-800",
-  Engrossed: "bg-yellow-100 text-yellow-800",
-  Enrolled: "bg-purple-100 text-purple-800",
-  Passed: "bg-green-100 text-green-800",
-  Vetoed: "bg-red-100 text-red-800",
-  Dead: "bg-gray-100 text-gray-800",
-};
-
-export default function LegislationDashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/legislation")
-      .then((r) => r.json())
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <p className="text-[var(--muted)]">Loading...</p>;
-  if (!data) return <p className="text-[var(--muted)]">Failed to load data</p>;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold">State Legislation</h1>
-        <p className="mt-1 text-[var(--muted)]">
-          Tracking {data.stats.totalBills} bill{data.stats.totalBills !== 1 ? "s" : ""},{" "}
-          {data.stats.totalResolutions} county resolution{data.stats.totalResolutions !== 1 ? "s" : ""}, and{" "}
-          {data.stats.totalLegislators} legislator{data.stats.totalLegislators !== 1 ? "s" : ""}
-        </p>
+        <h1 className="text-3xl font-bold">State Legislation</h1>
       </div>
 
-      {/* Legislator Cards */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Medina County&apos;s Representatives</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data.legislators.map((leg) => (
-            <Link
-              key={leg.id}
-              href={`/legislation/legislators/${leg.id}`}
-              className="rounded-lg border border-[var(--border)] bg-white p-5 transition-shadow hover:shadow-md"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold">{leg.name}</h3>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
-                      {leg.party}
-                    </span>
-                    <span className="text-sm text-[var(--muted)]">
-                      {leg.chamber === "Senate" ? "SD" : "HD"}-{leg.district}
-                    </span>
-                  </div>
+      {legs.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-xl font-semibold">Medina County&apos;s state legislators</h2>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {legs.map((l) => (
+              <li key={l.id} className="rounded-lg border border-[var(--royal)] bg-white p-4">
+                <Link href={`/legislation/legislators/${l.id}`} className="font-semibold text-[var(--navy)] hover:underline">{l.name}</Link>
+                <p className="text-sm text-[var(--muted)]">{l.party}, Ohio {l.chamber === "Senate" ? "Senate District" : "House District"} {l.district}</p>
+                {l.bioUrl && <a href={l.bioUrl} target="_blank" rel="noopener noreferrer" className={`text-xs ${link}`}>Official page</a>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section id="bills" className="space-y-4">
+        <h2 className="text-xl font-semibold">Bills</h2>
+        <form method="get" action="/legislation#bills" className="flex flex-wrap items-end gap-3">
+          <label className="flex min-w-0 flex-1 flex-col text-xs font-medium text-[var(--muted)]">
+            Search
+            <input name="search" defaultValue={search} placeholder="Bill number or topic" className="mt-1 min-w-0 rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]" />
+          </label>
+          <label className="flex flex-col text-xs font-medium text-[var(--muted)]">
+            Chamber
+            <select name="chamber" defaultValue={chamber ?? ""} className="mt-1 rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]">
+              <option value="">All</option><option>House</option><option>Senate</option>
+            </select>
+          </label>
+          <label className="flex flex-col text-xs font-medium text-[var(--muted)]">
+            Status
+            <select name="status" defaultValue={status ? String(status) : ""} className="mt-1 rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]">
+              <option value="">All</option>
+              {STATUSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </label>
+          <button className="rounded-md bg-[var(--royal)] px-4 py-2 text-sm font-medium text-white">Filter</button>
+        </form>
+
+        {list.length === 0 ? (
+          <p className="text-[var(--muted)]">No bills match those filters.</p>
+        ) : (
+          <ul className="space-y-2">
+            {list.map((b) => (
+              <li key={b.id} className="min-w-0 rounded-lg border border-[var(--border)] bg-white p-4">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <Link href={`/legislation/bills/${b.id}`} className="font-mono font-semibold text-[var(--accent)] hover:underline">{b.billNumber}</Link>
+                  {b.statusLabel && <span className="rounded-full bg-[var(--accent-light)] px-2 py-0.5 text-xs font-medium">{b.statusLabel}</span>}
+                  <span className="text-xs text-[var(--muted)]">{b.chamber}</span>
                 </div>
-              </div>
-              {leg.votingStats.total > 0 && (
-                <div className="mt-3 flex gap-3 text-xs">
-                  <span className="text-green-600">{leg.votingStats.yea} Yea</span>
-                  <span className="text-red-600">{leg.votingStats.nay} Nay</span>
-                  <span className="text-gray-500">{leg.votingStats.nv} NV</span>
-                  <span className="text-gray-400">{leg.votingStats.absent} Absent</span>
-                </div>
-              )}
-            </Link>
-          ))}
-        </div>
+                <p className="mt-1 break-words">{b.title}</p>
+                {b.lastAction && <p className="mt-1 text-xs text-[var(--muted)]">Last action {b.lastActionDate}: {b.lastAction}</p>}
+                <p className="mt-1 flex flex-wrap gap-x-3 text-xs">
+                  {b.url && <a href={b.url} target="_blank" rel="noopener noreferrer" className={link}>LegiScan</a>}
+                  {ohioBillUrl(b.billNumber) && <a href={ohioBillUrl(b.billNumber)!} target="_blank" rel="noopener noreferrer" className={link}>legislature.ohio.gov</a>}
+                  <span className="text-[var(--muted)]">verified {formatVerified(b.updatedAt)}</span>
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <nav aria-label="Pages" className="flex gap-4 text-sm">
+          {page > 1 && <Link href={qs(page - 1)} className={link}>Previous</Link>}
+          {hasNext && <Link href={qs(page + 1)} className={link}>Next</Link>}
+        </nav>
       </section>
 
-      {/* Bill Status Breakdown */}
-      {data.statusBreakdown.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Bill Status Breakdown</h2>
-          <div className="rounded-lg border border-[var(--border)] bg-white p-4">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.statusBreakdown}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="statusLabel" tick={{ fontSize: 12 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="count" name="Bills" radius={[4, 4, 0, 0]}>
-                  {data.statusBreakdown.map((entry, i) => (
-                    <Cell
-                      key={i}
-                      fill={STATUS_COLORS[entry.statusLabel ?? ""] ?? "#6b7280"}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-      )}
-
-      {/* Recent Bills */}
-      {data.recentBills.length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Recent Bills</h2>
-            <Link
-              href="/legislation/bills"
-              className="text-sm text-[var(--accent)] hover:underline"
-            >
-              View all bills
-            </Link>
-          </div>
-          <div className="overflow-x-auto rounded-lg border border-[var(--border)] bg-white">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] bg-gray-50">
-                  <th className="px-4 py-3 text-left font-medium text-[var(--muted)]">Bill</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--muted)]">Title</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--muted)]">Chamber</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--muted)]">Status</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--muted)]">Last Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.recentBills.map((bill) => (
-                  <tr key={bill.id} className="border-b border-[var(--border)] last:border-0">
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/legislation/bills/${bill.id}`}
-                        className="font-medium text-[var(--accent)] hover:underline"
-                      >
-                        {bill.billNumber}
-                      </Link>
-                    </td>
-                    <td className="max-w-xs truncate px-4 py-3">{bill.title}</td>
-                    <td className="px-4 py-3">{bill.chamber}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[bill.statusLabel ?? ""] ?? "bg-gray-100 text-gray-800"}`}
-                      >
-                        {bill.statusLabel}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--muted)]">{bill.lastActionDate}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* Recent Resolutions */}
-      {data.recentResolutions.length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Recent County Resolutions</h2>
-            <Link
-              href="/legislation/resolutions"
-              className="text-sm text-[var(--accent)] hover:underline"
-            >
-              View all resolutions
-            </Link>
-          </div>
-          <div className="space-y-2">
-            {data.recentResolutions.map((res) => (
-              <div
-                key={res.id}
-                className="rounded-lg border border-[var(--border)] bg-white p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-sm font-medium text-[var(--accent)]">
-                      {res.resolutionNumber}
-                    </span>
-                    <p className="mt-0.5">{res.title}</p>
-                  </div>
-                  <span className="flex-shrink-0 text-sm text-[var(--muted)]">
-                    {res.date}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <NewsletterCta />
     </div>
   );
 }

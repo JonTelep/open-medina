@@ -1,28 +1,30 @@
+import type { Metadata } from "next";
+import { pageMeta } from "@/lib/og";
 import Link from "next/link";
-import { SearchBar } from "@/components/search-bar";
 import { StatCard } from "@/components/stat-card";
 import { AskMedina } from "@/components/ask-medina";
 import { Logo } from "@/components/logo";
-import { getDashboardStats } from "@/db/queries/stats";
-import { formatMoney } from "@/components/money-format";
 import { MEDINA_FACTS } from "@/lib/site";
-import { getOfficials, getPopulation, getAgendas, lastUpdated } from "@/lib/local-data";
+import { getOfficials, getPopulation, lastUpdated } from "@/lib/local-data";
 import { formatET } from "@/components/last-updated";
 import { ReportLink } from "@/components/forms";
 import { liveSections } from "@/lib/sections";
+import { Sourced, fmtNum } from "@/components/sourced";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = pageMeta(
+  "/",
+  "OpenMedina: Open government for Medina County, Ohio",
+  "Ask a question about Medina County, Ohio government, see what is on your November 3 ballot, and explore official data, each figure linked to its source.",
+);
 
 
 export default function HomePage() {
-  const stats = getDashboardStats();
-  const hasData = stats.totalPeople + stats.totalDocketItems + stats.totalCampaigns + stats.totalBills > 0;
   const pop = getPopulation();
   const latestYear = pop.length ? Math.max(...pop.map((p) => p.year)) : null;
-  const popOf = (g: string) => pop.find((p) => p.geography === g && p.year === latestYear)?.population;
+  const popRow = (g: string) => pop.find((p) => p.geography === g && p.year === latestYear && p.source_url && p.verified_at);
   const officials = getOfficials();
-  const agendaCount = getAgendas(1000).length;
-  const hasLocal = pop.length > 0 || officials.length > 0;
+  const hasLocal = pop.some((p) => p.source_url && p.verified_at);
   const localUpdated = lastUpdated({ sources: ["census-county", "census-cities", "medina-council", "brunswick-council", "wadsworth-council", "wadsworth-agendas", "medina-agendas"] });
   const facts = MEDINA_FACTS.filter((f) => f.label && f.detail);
 
@@ -100,12 +102,12 @@ export default function HomePage() {
             {localUpdated && <p className="text-xs text-[var(--muted)]">Last updated {formatET(localUpdated)}</p>}
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {popOf("Medina County") && <StatCard label="Medina County population" value={popOf("Medina County")!.toLocaleString()} sub={`Census estimate, ${latestYear}`} />}
-            {popOf("City of Medina") && <StatCard label="City of Medina" value={popOf("City of Medina")!.toLocaleString()} sub={`Census estimate, ${latestYear}`} />}
-            {popOf("City of Brunswick") && <StatCard label="City of Brunswick" value={popOf("City of Brunswick")!.toLocaleString()} sub={`Census estimate, ${latestYear}`} />}
-            {popOf("City of Wadsworth") && <StatCard label="City of Wadsworth" value={popOf("City of Wadsworth")!.toLocaleString()} sub={`Census estimate, ${latestYear}`} />}
-            {officials.length > 0 && <StatCard label="City officials listed" value={officials.length} sub="Medina, Brunswick, Wadsworth councils" />}
-            {agendaCount > 0 && <StatCard label="Meeting agendas" value={agendaCount} sub="From city websites" />}
+            {["Medina County", "City of Medina", "City of Brunswick", "City of Wadsworth"].map((g) => {
+              const row = popRow(g);
+              if (!row) return null;
+              const v = <Sourced block value={fmtNum(row.population)} url={row.source_url} verifiedAt={row.verified_at} />;
+              return <StatCard key={g} label={g === "Medina County" ? "Medina County population" : g} value={v} sub={`Census estimate, ${latestYear}`} />;
+            })}
           </div>
           <p className="mt-3 text-sm">
             <a href="/local" className="font-semibold text-[var(--royal)] underline">See local government data and sources</a>
@@ -114,33 +116,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Stats, only when real data has been loaded */}
-      {hasData && (
-        <section aria-labelledby="stats-heading">
-          <h2 id="stats-heading" className="text-2xl font-bold">Records collected</h2>
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            {stats.totalPeople > 0 && <StatCard label="People" value={stats.totalPeople.toLocaleString()} sub="Tracked entities" />}
-            {stats.totalSalaryRecords > 0 && <StatCard
-              label="Salary Records"
-              value={stats.totalSalaryRecords.toLocaleString()}
-              sub={stats.salaryYearMin && stats.salaryYearMax ? `${stats.salaryYearMin} to ${stats.salaryYearMax}` : undefined}
-            />}
-            {stats.totalDocketItems > 0 && <StatCard label="Docket Payments" value={stats.totalDocketItems.toLocaleString()} sub={`${stats.totalDockets} dockets`} />}
-            {stats.totalDocketItems > 0 && <StatCard label="Total Spending" value={formatMoney(stats.totalSpending)} sub="Docket payments" />}
-            {stats.totalCampaigns > 0 && <StatCard label="Campaigns" value={stats.totalCampaigns.toLocaleString()} sub={`${formatMoney(stats.totalDonationAmount)} donated`} />}
-            {stats.totalBills > 0 && <StatCard label="Bills Tracked" value={stats.totalBills.toLocaleString()} sub={`${stats.totalResolutions} resolutions`} />}
-          </div>
-        </section>
-      )}
-
-      {/* Database search */}
-      <section aria-labelledby="db-heading" className="rounded-2xl border border-[var(--royal)] bg-[var(--accent-light)] p-6 sm:p-8">
-        <h2 id="db-heading" className="text-xl font-bold">Search the OpenMedina database</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">Look up people, salaries, vendors, meetings, and more from records we have collected.</p>
-        <div className="mt-4">
-          <SearchBar large />
-        </div>
-      </section>
     </div>
   );
 }

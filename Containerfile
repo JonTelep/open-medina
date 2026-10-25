@@ -15,7 +15,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Generate Drizzle migrations + build Next.js (standalone output)
-RUN npx next build
+RUN node scripts/check-sourced.mjs && npx next build
 
 # ── Stage 3: Production image ───────────────────────────────────────
 FROM node:22-slim AS runner

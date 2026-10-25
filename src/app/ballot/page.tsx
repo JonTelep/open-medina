@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/og";
 import { BALLOT, explain } from "@/lib/ballot";
+import { NewsletterCta } from "@/components/newsletter-cta";
 import { BallotPicker } from "./picker";
 
-export const metadata: Metadata = {
-  title: "What's on my ballot",
-  description: "Races and issues on the November 3, 2026 ballot in Medina County, Ohio, from the official sample ballots.",
-};
+export const metadata: Metadata = pageMeta(
+  "/ballot",
+  "What's on my ballot",
+  "Races and issues on the November 3, 2026 ballot in Medina County, Ohio, by community, from the official sample ballots.",
+  "/og-ballot.png",
+);
 
 export default function BallotPage() {
   const order = (j: string | null) => (j === "Liverpool Township" ? -1 : 0);
@@ -35,7 +39,8 @@ export default function BallotPage() {
           </p>
         </div>
       </div>
-      <BallotPicker precincts={withExplainers} />
+      <BallotPicker precincts={withExplainers} verifiedAt={BALLOT.retrieved} />
+      <NewsletterCta />
       <section className="max-w-3xl space-y-2 text-sm text-[var(--muted)]">
         <h2 className="text-lg font-semibold text-[var(--navy)]">Sources</h2>
         <p>

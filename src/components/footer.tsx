@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "./logo";
 import { NewsletterForm } from "./forms";
+import { NEWSLETTER_PITCH } from "./newsletter-cta";
 import { liveSections } from "@/lib/sections";
 
 const local = [
@@ -28,7 +29,7 @@ export function Footer() {
             every township in between.
           </p>
           <h2 className="mt-6 text-sm font-semibold uppercase tracking-wider text-[var(--gold)]">Medina This Week</h2>
-          <p className="mt-1 text-sm text-blue-100">A weekly email with new agendas and data updates.</p>
+          <p className="mt-1 text-sm text-blue-100">{NEWSLETTER_PITCH}</p>
           <div className="mt-2"><NewsletterForm dark /></div>
         </div>
 

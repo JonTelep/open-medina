@@ -3,12 +3,13 @@
 import { useMemo, useState } from "react";
 import type { Explainer, Issue, Precinct, Race } from "@/lib/ballot";
 import { ReportLink } from "@/components/forms";
+import { Sourced } from "@/components/sourced";
 
 type P = Omit<Precinct, "contests"> & { contests: (Race | (Issue & { explainer: Explainer }))[] };
 
 const label = (p: P) => p.jurisdiction ?? `Precinct ${p.precinct}`;
 
-export function BallotPicker({ precincts }: { precincts: P[] }) {
+export function BallotPicker({ precincts, verifiedAt }: { precincts: P[]; verifiedAt: string }) {
   const groups = useMemo(() => [...new Set(precincts.map(label))], [precincts]);
   const [group, setGroup] = useState(groups[0]!);
   const inGroup = precincts.filter((p) => label(p) === group);
@@ -59,11 +60,17 @@ export function BallotPicker({ precincts }: { precincts: P[] }) {
       </p>
 
       <section>
-        <h2 className="text-2xl font-bold">Issues ({issues.length})</h2>
+        <h2 className="text-2xl font-bold">Issues</h2>
         <div className="mt-4 space-y-4">
           {issues.map((c, i) => (
             <article key={i} className="min-w-0 rounded-xl border border-[var(--royal)] border-t-4 border-t-[var(--gold)] bg-white p-4">
               <h3 className="font-semibold text-[var(--navy)]">{c.heading.filter((h) => !/^A majority/i.test(h)).slice(0, 3).join(": ")}</h3>
+              <Sourced
+                block
+                url={p.pdf}
+                verifiedAt={verifiedAt}
+                value={
+                  <>
               <dl className="mt-3 space-y-2 text-sm">
                 <div><dt className="font-medium">What it does</dt><dd>{c.explainer.what}</dd></div>
                 {c.explainer.cost && <div><dt className="font-medium">Cost</dt><dd>{c.explainer.cost}</dd></div>}
@@ -78,8 +85,11 @@ export function BallotPicker({ precincts }: { precincts: P[] }) {
                   <p className="text-xs text-[var(--muted)]">Choices: {c.choices.join(" / ")}</p>
                 </div>
               </details>
+                  </>
+                }
+              />
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                <a href={p.source} target="_blank" rel="noopener noreferrer" className="text-[var(--royal)] underline">Source: Medina County Board of Elections</a>
+                <a href={p.source} target="_blank" rel="noopener noreferrer" className="text-[var(--royal)] underline">Ballot display page</a>
                 <ReportLink item={`Ballot: ${p.precinct}: ${c.heading[0]}`} />
               </div>
             </article>
@@ -88,17 +98,26 @@ export function BallotPicker({ precincts }: { precincts: P[] }) {
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold">Races ({races.length})</h2>
+        <h2 className="text-2xl font-bold">Races</h2>
         <p className="mt-1 text-sm text-[var(--muted)]">Candidates are listed in the order they appear on this precinct&apos;s ballot.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {races.map((r, i) => (
             <article key={i} className="min-w-0 rounded-xl border border-[var(--royal)] bg-white p-4">
               <h3 className="font-semibold text-[var(--navy)]">{r.office.replace(/^For /, "")}</h3>
-              {r.voteFor && <p className="text-xs text-[var(--muted)]">{r.voteFor.replace(/[()]/g, "")}</p>}
-              <ul className="mt-2 space-y-1 text-sm">
-                {r.candidates.map((c) => <li key={c.name}>{c.name}</li>)}
-                {r.writeIn && <li className="text-[var(--muted)]">Write-in line</li>}
-              </ul>
+              <Sourced
+                block
+                url={p.pdf}
+                verifiedAt={verifiedAt}
+                value={
+                  <>
+                    {r.voteFor && <p className="text-xs text-[var(--muted)]">{r.voteFor.replace(/[()]/g, "")}</p>}
+                    <ul className="mt-2 space-y-1 text-sm">
+                      {r.candidates.map((c) => <li key={c.name}>{c.name}</li>)}
+                      {r.writeIn && <li className="text-[var(--muted)]">Write-in line</li>}
+                    </ul>
+                  </>
+                }
+              />
               <div className="mt-2"><ReportLink item={`Ballot: ${p.precinct}: ${r.office}`} /></div>
             </article>
           ))}

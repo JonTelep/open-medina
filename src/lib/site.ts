@@ -4,7 +4,7 @@ export const SITE = {
   url: "https://openmedina.org",
   tagline: "Open government for Medina County, Ohio",
   description:
-    "Ask questions about local government in Medina County, Ohio, and explore public data on salaries, spending, meetings, campaign finance, and legislation.",
+    "Ask questions about local government in Medina County, Ohio, see what is on your ballot, and explore official public data, each figure linked to its source.",
 };
 
 export interface Fact {
