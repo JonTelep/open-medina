@@ -103,4 +103,14 @@ export function lastUpdated(opts: { scrapers?: string[]; sources?: string[] }): 
   return times.map((t) => new Date(t.includes("T") ? t : t.replace(" ", "T") + "Z")).sort((a, b) => +b - +a)[0]!.toISOString();
 }
 
+export function getAcs() {
+  try {
+    return sqlite.prepare("SELECT geography, year, measure, value, moe, variable FROM local_acs").all() as {
+      geography: string; year: number; measure: string; value: number; moe: number; variable: string;
+    }[];
+  } catch {
+    return [];
+  }
+}
+
 export { sqlite };

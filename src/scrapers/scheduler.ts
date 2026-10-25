@@ -23,17 +23,20 @@ function etParts(d = new Date()) {
 }
 
 let running = false;
-function run(groups: string[]) {
+function run(groups: string[], then?: () => void) {
   if (running) return log(`skip ${groups.join(",")}: previous run still going`);
   running = true;
   log(`start ${groups.join(",")}`);
-  const child = spawn("npx", ["tsx", "src/scrapers/scrape-local.ts", ...groups], { cwd: "/app", env: process.env });
+  const script = groups[0] === "legislation" ? "src/scrapers/scrape-legislation.ts" : "src/scrapers/scrape-local.ts";
+  const args = groups[0] === "legislation" ? [] : groups;
+  const child = spawn("npx", ["tsx", script, ...args], { cwd: "/app", env: process.env });
   const out = (b: Buffer) => b.toString().split("\n").filter(Boolean).forEach((l) => log(`  ${l}`));
   child.stdout.on("data", out);
   child.stderr.on("data", out);
   child.on("exit", (code) => {
     running = false;
     log(`end ${groups.join(",")} exit=${code}${code ? " FAILED" : ""}`);
+    then?.();
   });
 }
 
@@ -46,11 +49,22 @@ function tick() {
   if (et.hour === 4 && lastDaily !== et.day) {
     lastDaily = et.day;
     lastElection = now;
-    return run(["census", "councils", "agendas", "elections"]);
+    return run(["census", "councils", "agendas", "elections"], () => run(["legislation"]));
   }
   if (now < ELECTION_END && now - lastElection >= 6 * 3600_000) {
     lastElection = now;
     run(["elections"]);
+  }
+}
+
+function count(sql: string) {
+  try {
+    const db = new Database(`${DATA}/accountability.db`, { readonly: true });
+    const r = db.prepare(sql).get() as { c: number };
+    db.close();
+    return r.c;
+  } catch {
+    return 0;
   }
 }
 
@@ -66,9 +80,11 @@ function isEmpty() {
 }
 
 log("scheduler started");
-if (isEmpty()) {
+const needAcs = count("SELECT count(*) c FROM local_acs") === 0;
+const needBills = count("SELECT count(*) c FROM bills") === 0;
+if (isEmpty() || needAcs || needBills) {
   lastElection = Date.now();
-  run(["census", "councils", "agendas", "elections"]);
+  run(["census", "councils", "agendas", "elections"], needBills ? () => run(["legislation"]) : undefined);
 } else {
   lastElection = Date.now() - 6 * 3600_000 + 60_000; // first election check about a minute after start
 }

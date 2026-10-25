@@ -42,7 +42,7 @@ async function apiCall(op: string, params: Record<string, string | number> = {})
     url.searchParams.set(k, String(v));
   }
 
-  const response = await fetch(url.toString());
+  const response = await fetch(url.toString(), { headers: { "User-Agent": "OpenMedina/1.0 (+https://openmedina.org)" } });
   if (!response.ok) {
     throw new Error(`LegiScan API error: ${response.status} ${response.statusText}`);
   }
@@ -245,4 +245,39 @@ export function normalizeChamber(chamber: string): string {
   if (/house|h/i.test(chamber)) return "House";
   if (/senate|s/i.test(chamber)) return "Senate";
   return chamber;
+}
+
+// ─── Session helpers ────────────────────────────────────────────────
+
+export async function getCurrentSession(state = "OH"): Promise<{ session_id: number; session_name: string }> {
+  const data = await apiCall("getSessionList", { state });
+  const list = data.sessions as { session_id: number; session_name: string; special: number; year_start: number }[];
+  return list.filter((s) => !s.special).sort((a, b) => b.year_start - a.year_start)[0]!;
+}
+
+export interface LegiScanSessionPerson {
+  people_id: number;
+  name: string;
+  first_name: string;
+  last_name: string;
+  party: string;
+  role: string;
+  district: string;
+}
+
+export async function getSessionPeople(sessionId: number): Promise<LegiScanSessionPerson[]> {
+  const data = await apiCall("getSessionPeople", { id: sessionId });
+  return (data.sessionpeople as { people: LegiScanSessionPerson[] }).people;
+}
+
+export async function getSponsoredBillIds(peopleId: number, sessionId: number): Promise<number[]> {
+  const data = await apiCall("getSponsoredList", { id: peopleId });
+  const bills = (data.sponsoredbills as { bills: { bill_id: number; session_id: number }[] }).bills;
+  return bills.filter((b) => b.session_id === sessionId).map((b) => b.bill_id);
+}
+
+export async function searchSessionBillIds(query: string, state = "OH"): Promise<number[]> {
+  const data = await apiCall("getSearch", { state, query, year: 2 });
+  const r = data.searchresult as Record<string, { bill_id?: number }>;
+  return Object.entries(r).filter(([k]) => k !== "summary").map(([, v]) => v.bill_id!).filter(Boolean);
 }

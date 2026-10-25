@@ -89,6 +89,43 @@ async function censusCounty(): Promise<number> {
   return vals.length;
 }
 
+// ── ACS 5-year estimates (Census API, key from env, never stored in URLs we save) ──
+sqlite.exec(`CREATE TABLE IF NOT EXISTS local_acs (
+  geography TEXT NOT NULL, year INTEGER NOT NULL, measure TEXT NOT NULL,
+  value REAL, moe REAL, variable TEXT NOT NULL, source_key TEXT NOT NULL,
+  PRIMARY KEY (geography, measure)
+)`);
+export const ACS_URL = "https://api.census.gov/data/2024/acs/acs5";
+const ACS_VARS = [
+  { measure: "Median household income", table: "", v: "B19013_001" },
+  { measure: "Median home value", table: "", v: "B25077_001" },
+  { measure: "Poverty rate", table: "/subject", v: "S1701_C03_001" },
+  { measure: "Bachelor's degree or higher (age 25+)", table: "/subject", v: "S1501_C02_015" },
+];
+const ACS_GEOS = [
+  { name: "Medina County", q: "for=county:103&in=state:39" },
+  { name: "City of Medina", q: "for=place:48790&in=state:39" },
+  { name: "City of Brunswick", q: "for=place:09680&in=state:39" },
+  { name: "City of Wadsworth", q: "for=place:80304&in=state:39" },
+];
+async function censusAcs(): Promise<number> {
+  const key = process.env.CENSUS_API_KEY;
+  if (!key) throw new Error("CENSUS_API_KEY not set");
+  const rows: [string, number, string, number, number, string][] = [];
+  for (const g of ACS_GEOS)
+    for (const a of ACS_VARS) {
+      const res = await fetch(`${ACS_URL}${a.table}?get=NAME,${a.v}E,${a.v}M&${g.q}&key=${key}`, { signal: AbortSignal.timeout(60000) });
+      if (!res.ok) throw new Error(`Census API HTTP ${res.status} for ${a.v}`);
+      const [, r] = (await res.json()) as string[][];
+      const val = Number(r![1]);
+      if (!Number.isFinite(val) || val < 0) throw new Error(`Census API returned no value for ${g.name} ${a.v}`);
+      rows.push([g.name, 2024, a.measure, val, Number(r![2]), a.v + "E"]);
+    }
+  const ins = sqlite.prepare("INSERT OR REPLACE INTO local_acs VALUES (?, ?, ?, ?, ?, ?, 'census-acs')");
+  sqlite.transaction(() => rows.forEach((r) => ins.run(...r)))();
+  return rows.length;
+}
+
 async function censusCities(): Promise<number> {
   const rows = parseCsv(await get(CENSUS_CITIES));
   const h = rows[0]!;
@@ -236,6 +273,7 @@ async function elections(): Promise<number> {
 const JOBS: Record<string, Job[]> = {
   census: [
     { key: "census-county", name: "U.S. Census Bureau population estimates (Medina County)", url: CENSUS_COUNTY, run: censusCounty },
+    { key: "census-acs", name: "U.S. Census Bureau American Community Survey 5-year estimates, 2020 to 2024", url: ACS_URL, run: censusAcs },
     { key: "census-cities", name: "U.S. Census Bureau population estimates (cities)", url: CENSUS_CITIES, run: censusCities },
   ],
   councils: [
