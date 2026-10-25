@@ -60,6 +60,7 @@ export function AskMedina({
   const [data, setData] = useState<AskResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showChips, setShowChips] = useState(false);
   const ran = useRef<string | null>(null);
 
   async function ask(q: string) {
@@ -69,6 +70,7 @@ export function AskMedina({
     setLoading(true);
     setError(null);
     setData(null);
+    setShowChips(false);
     if (syncUrl) router.replace(`/search?q=${encodeURIComponent(question)}`, { scroll: false });
     try {
       const res = await fetch(`/api/ask?q=${encodeURIComponent(question)}`);
@@ -96,7 +98,7 @@ export function AskMedina({
   }
 
   return (
-    <section className="space-y-4" aria-labelledby="ask-medina-heading">
+    <section className="min-w-0 max-w-full space-y-4" aria-labelledby="ask-medina-heading">
       <div className={hideHeading ? "sr-only" : ""}>
         <h2 id="ask-medina-heading" className="text-xl font-semibold sm:text-2xl">
           Ask Medina
@@ -129,6 +131,11 @@ export function AskMedina({
         </button>
       </form>
 
+      {(data || loading || error) && !showChips ? (
+        <button type="button" onClick={() => setShowChips(true)} className="text-xs font-semibold text-[var(--royal)] underline">
+          Show suggested questions
+        </button>
+      ) : (
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Try asking</p>
         <div className="flex flex-wrap gap-2">
@@ -136,7 +143,7 @@ export function AskMedina({
             <button
               key={s}
               type="button"
-              onClick={() => ask(s)}
+              onClick={() => { setShowChips(false); ask(s); }}
               className="rounded-full border border-[var(--royal)] bg-white px-3 py-1.5 text-left text-sm text-[var(--navy)] hover:bg-[var(--accent-light)]"
             >
               {s}
@@ -144,6 +151,7 @@ export function AskMedina({
           ))}
         </div>
       </div>
+      )}
 
       <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
         This is not legal advice. Results come from government websites and may be out of date. Always confirm details
@@ -164,27 +172,26 @@ export function AskMedina({
                 No official sources found. Try rewording your question or naming the city or office.
               </p>
             )}
-            <ul className="space-y-3">
+            <ul className="space-y-2 sm:space-y-3">
               {data.results.map((r) => (
-                <li key={r.url} className="rounded-xl border border-[var(--royal)] bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className={`rounded-full px-2 py-0.5 font-medium ${BADGE[r.jurisdiction]}`}>
+                <li key={r.url} className="min-w-0 overflow-hidden rounded-xl border border-[var(--royal)] bg-white p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
+                  <div className="flex min-w-0 items-center gap-2 text-[11px] sm:text-xs">
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 font-medium ${BADGE[r.jurisdiction]}`}>
                       {BADGE_TEXT[r.jurisdiction]}
                     </span>
-                    <span className="break-all text-[var(--muted)]">{r.domain}</span>
-                    {r.boosted && <span className="text-[var(--muted)]">· {r.sourceLabel}</span>}
+                    <span className="min-w-0 truncate text-[var(--muted)]">{r.domain}{r.boosted && <span className="hidden sm:inline"> · {r.sourceLabel}</span>}</span>
                   </div>
-                  <h3 className="mt-2 text-base font-semibold leading-snug">
+                  <h3 className="mt-1.5 break-words text-[15px] font-semibold leading-snug sm:mt-2 sm:text-base">
                     <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">
                       {r.title}
                     </a>
                   </h3>
-                  {r.snippet && <p className="mt-1 text-sm text-slate-700">{r.snippet}</p>}
+                  {r.snippet && <p className="mt-1 line-clamp-2 break-words text-[13px] text-slate-700 sm:line-clamp-3 sm:text-sm">{r.snippet}</p>}
                   <a
                     href={r.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 block truncate text-xs text-[var(--muted)] hover:underline"
+                    className="mt-2 hidden truncate text-xs text-[var(--muted)] hover:underline sm:block"
                   >
                     {r.url}
                   </a>

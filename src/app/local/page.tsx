@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAgendas, getOfficials, getPopulation, getSources } from "@/lib/local-data";
+import { getAcs, getAgendas, getOfficials, getPopulation, getSources } from "@/lib/local-data";
 import { LastUpdated, formatET } from "@/components/last-updated";
 import { ReportLink } from "@/components/forms";
 
@@ -15,6 +15,9 @@ export default function LocalPage() {
   const officials = getOfficials();
   const agendas = getAgendas(8);
   const sources = getSources();
+  const acs = getAcs();
+  const measures = [...new Set(acs.map((a) => a.measure))];
+  const fmt = (m: string, v: number) => (m.includes("rate") || m.includes("degree") ? `${v}%` : `$${v.toLocaleString()}`);
 
   function SourceLink({ k }: { k: string }) {
     const s = sources.find((x) => x.key === k);
@@ -68,6 +71,43 @@ export default function LocalPage() {
           </div>
           <p className="mt-2 text-xs text-[var(--muted)]">July 1 estimates (2020 is the April base) from the U.S. Census Bureau Population Estimates Program.</p>
           <div className="flex flex-col gap-1"><SourceLink k="census-county" /><SourceLink k="census-cities" /><ReportLink item="Local Government: population" /></div>
+        </section>
+      )}
+
+      {acs.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-bold">Income, housing and education</h2>
+          <div className="mt-4 overflow-x-auto rounded-xl border border-[var(--royal)] bg-white">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead className="bg-[var(--accent-light)] text-left">
+                <tr>
+                  <th className="px-4 py-2">Measure</th>
+                  {ORDER.map((g) => <th key={g} className="px-4 py-2 text-right">{g}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {measures.map((m) => (
+                  <tr key={m} className="border-t">
+                    <td className="px-4 py-2 font-medium">{m}</td>
+                    {ORDER.map((g) => {
+                      const v = acs.find((a) => a.geography === g && a.measure === m);
+                      return (
+                        <td key={g} className="px-4 py-2 text-right tabular-nums">
+                          {v ? fmt(m, v.value) : ""}
+                          {v && <div className="text-[10px] text-[var(--muted)]">± {fmt(m, v.moe)}</div>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            American Community Survey 5-year estimates, 2020 to 2024. The small number under each value is the margin of
+            error at 90 percent confidence. Variables: B19013, B25077, S1701, S1501.
+          </p>
+          <div className="flex flex-col gap-1"><SourceLink k="census-acs" /><ReportLink item="Local Government: ACS estimates" /></div>
         </section>
       )}
 

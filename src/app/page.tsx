@@ -38,7 +38,7 @@ export default function HomePage() {
     <div className="space-y-14">
       {/* Hero */}
       <section className="bg-sunburst relative left-1/2 -mt-6 w-screen -translate-x-1/2 border-b-4 border-[var(--gold)] text-white">
-        <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1fr_1.3fr] lg:gap-12 lg:px-8 lg:py-16">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-8 [&>*]:min-w-0 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1fr_1.3fr] lg:gap-12 lg:px-8 lg:py-16">
           <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
             <Logo size={140} className="rounded-3xl shadow-xl ring-2 ring-[var(--royal)] sm:h-[180px] sm:w-[180px]" />
             <p className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--gold)]">Medina County, Ohio</p>
@@ -51,7 +51,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border-2 border-[var(--royal)] bg-white p-4 text-[var(--foreground)] shadow-2xl sm:p-6">
+          <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border-2 border-[var(--royal)] bg-white p-4 text-[var(--foreground)] shadow-2xl sm:p-6">
             <AskMedina />
           </div>
         </div>

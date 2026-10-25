@@ -20,7 +20,13 @@ import {
 } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { startRun, completeRun, failRun } from "./lib/scraper-log";
+import { sqlite } from "@/db";
 import {
+  getCurrentSession,
+  getSessionPeople,
+  getSponsoredBillIds,
+  searchSessionBillIds,
+  type LegiScanSessionPerson,
   hasApiKey,
   getMasterList,
   getBill,
@@ -32,70 +38,51 @@ import {
 
 const SCRAPER_NAME = "legislation";
 
-// Medina County's state representatives (LegiScan people_id values)
-// These would need to be looked up via the API on first run
-const MEDINA_LEGISLATORS = [
-  {
-    name: "Mark Romanchuk",
-    firstName: "Mark",
-    lastName: "Romanchuk",
-    party: "Republican",
-    chamber: "Senate",
-    district: "22",
-  },
-  {
-    name: "Sharon A. Ray",
-    firstName: "Sharon",
-    lastName: "Ray",
-    party: "Republican",
-    chamber: "House",
-    district: "66",
-  },
-  {
-    name: "Melanie Miller",
-    firstName: "Melanie",
-    lastName: "Miller",
-    party: "Republican",
-    chamber: "House",
-    district: "67",
-  },
-];
+// Districts that include Medina County. Verified with the U.S. Census Geocoder for the
+// Medina, Brunswick and Wadsworth city halls (2024 districts), and member pages at
+// ohiohouse.gov and ohiosenate.gov.
+const AREA_DISTRICTS: Record<string, { chamber: string; district: string; official: string }> = {
+  "HD-066": { chamber: "House", district: "66", official: "https://ohiohouse.gov/members/sean-hutson" },
+  "HD-067": { chamber: "House", district: "67", official: "https://ohiohouse.gov/members/melanie-miller" },
+  "SD-022": { chamber: "Senate", district: "22", official: "https://ohiosenate.gov/members/mark-romanchuk" },
+};
 
-/** Ensure all Medina legislators exist in the database. */
-function ensureLegislators(): Map<string, number> {
-  const nameToId = new Map<string, number>();
+sqlite.exec(`CREATE TABLE IF NOT EXISTS legislation_focus (
+  bill_id INTEGER NOT NULL,
+  reason TEXT NOT NULL,
+  PRIMARY KEY (bill_id, reason)
+)`);
 
-  for (const leg of MEDINA_LEGISLATORS) {
-    // Check if already exists
+/** Ensure the area legislators from LegiScan session people exist, keyed by people_id. */
+function ensureLegislators(people: LegiScanSessionPerson[]): Map<number, number> {
+  const map = new Map<number, number>();
+  for (const p of people) {
+    const d = AREA_DISTRICTS[p.district]!;
+    const party = p.party === "R" ? "Republican" : p.party === "D" ? "Democratic" : p.party;
     const existing = db
       .select({ id: legislators.id })
       .from(legislators)
-      .where(eq(legislators.name, leg.name))
-      .get();
-
+      .where(eq(legislators.legiscanPeopleId, p.people_id))
+      .get() ?? db.select({ id: legislators.id }).from(legislators).where(eq(legislators.name, p.name)).get();
+    const values = {
+      legiscanPeopleId: p.people_id,
+      name: p.name,
+      firstName: p.first_name,
+      lastName: p.last_name,
+      party,
+      chamber: d.chamber,
+      district: d.district,
+      bioUrl: d.official,
+      source: "legiscan",
+    };
     if (existing) {
-      nameToId.set(leg.lastName.toLowerCase(), existing.id);
-      continue;
+      db.update(legislators).set(values).where(eq(legislators.id, existing.id)).run();
+      map.set(p.people_id, existing.id);
+    } else {
+      map.set(p.people_id, db.insert(legislators).values(values).returning({ id: legislators.id }).get().id);
     }
-
-    const result = db
-      .insert(legislators)
-      .values({
-        name: leg.name,
-        firstName: leg.firstName,
-        lastName: leg.lastName,
-        party: leg.party,
-        chamber: leg.chamber,
-        district: leg.district,
-        source: "legiscan",
-      })
-      .returning({ id: legislators.id })
-      .get();
-
-    nameToId.set(leg.lastName.toLowerCase(), result.id);
   }
-
-  return nameToId;
+  return map;
 }
 
 /** Get existing bill change hashes for incremental sync. */
@@ -117,17 +104,9 @@ function getExistingHashes(): Map<number, string> {
   return map;
 }
 
-/** Find a legislator by last name match from sponsor data. */
-function findLegislator(
-  lastName: string,
-  nameToId: Map<string, number>
-): number | null {
-  return nameToId.get(lastName.toLowerCase()) ?? null;
-}
-
 export async function scrapeLegislation(): Promise<void> {
   if (!hasApiKey()) {
-    console.log("LEGISCAN_API_KEY not set — skipping legislation scraper.");
+    console.log("LEGISCAN_API_KEY not set, skipping legislation scraper.");
     console.log("Set the key in .env to enable LegiScan integration.");
     return;
   }
@@ -138,14 +117,21 @@ export async function scrapeLegislation(): Promise<void> {
   let updated = 0;
 
   try {
-    const nameToId = ensureLegislators();
-    console.log(`Ensured ${nameToId.size} Medina County legislators in DB.`);
+    const session = await getCurrentSession();
+    console.log(`Session: ${session.session_name} (${session.session_id})`);
+    const people = (await getSessionPeople(session.session_id)).filter((p) => AREA_DISTRICTS[p.district]);
+    const peopleToId = ensureLegislators(people);
+    console.log(`Area legislators: ${people.map((p) => `${p.name} ${p.district}`).join(", ")}`);
 
-    // Fetch master bill list
-    console.log("Fetching master bill list from LegiScan...");
-    const masterList = await getMasterList();
-    const billEntries = Object.values(masterList);
-    console.log(`Found ${billEntries.length} bills in current session.`);
+    // Priority set: bills sponsored by area legislators, plus bills that mention Medina County.
+    const reasons = new Map<number, Set<string>>();
+    const add = (id: number, r: string) => (reasons.get(id) ?? reasons.set(id, new Set()).get(id)!).add(r);
+    for (const p of people) for (const id of await getSponsoredBillIds(p.people_id, session.session_id)) add(id, `sponsor:${p.people_id}`);
+    for (const id of await searchSessionBillIds('"Medina County"')) add(id, "mentions-medina");
+
+    const masterList = await getMasterList(session.session_id);
+    const billEntries = Object.values(masterList).filter((b) => reasons.has(b.bill_id));
+    console.log(`Priority bills: ${billEntries.length} of ${Object.keys(masterList).length} in session.`);
 
     // Get existing hashes for change detection
     const existingHashes = getExistingHashes();
@@ -156,6 +142,8 @@ export async function scrapeLegislation(): Promise<void> {
       // Check if bill has changed
       const existingHash = existingHashes.get(entry.bill_id);
       if (existingHash === entry.change_hash) {
+        const row = db.select({ id: bills.id }).from(bills).where(eq(bills.legiscanBillId, entry.bill_id)).get();
+        if (row) for (const r of reasons.get(entry.bill_id)!) sqlite.prepare("INSERT OR IGNORE INTO legislation_focus VALUES (?, ?)").run(row.id, r);
         continue; // No changes, skip
       }
 
@@ -224,10 +212,13 @@ export async function scrapeLegislation(): Promise<void> {
         created++;
       }
 
-      // Sync sponsors — clear and re-insert
+      sqlite.prepare("DELETE FROM legislation_focus WHERE bill_id = ?").run(billId);
+      for (const r of reasons.get(entry.bill_id)!) sqlite.prepare("INSERT OR IGNORE INTO legislation_focus VALUES (?, ?)").run(billId, r);
+
+      // Sync sponsors: clear and re-insert
       db.delete(billSponsors).where(eq(billSponsors.billId, billId)).run();
       for (const sponsor of billDetail.sponsors) {
-        const legislatorId = findLegislator(sponsor.last_name, nameToId);
+        const legislatorId = peopleToId.get((sponsor as { people_id: number }).people_id) ?? null;
         if (legislatorId) {
           db.insert(billSponsors)
             .values({
@@ -280,13 +271,14 @@ export async function scrapeLegislation(): Promise<void> {
         console.log(
           `    Fetching roll call ${vote.roll_call_id} votes...`
         );
+        if (existingRc) continue; // individual votes already stored
         const rcDetail = await getRollCall(vote.roll_call_id);
 
         // Only record votes from our Medina legislators
         for (const individualVote of rcDetail.votes) {
           // We'd need to match people_id to our legislators
           // For now, check all legislators by their LegiScan people_id
-          const allLegislators = db.select().from(legislators).all();
+          const allLegislators = db.select().from(legislators).all().filter((l) => l.legiscanPeopleId);
           for (const leg of allLegislators) {
             if (leg.legiscanPeopleId === individualVote.people_id) {
               db.insert(legislatorVotes)
