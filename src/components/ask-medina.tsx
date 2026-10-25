@@ -77,10 +77,13 @@ export function AskMedina({
   initialQuery = "",
   syncUrl = false,
   hideHeading = false,
+  inlineNewsletter = true,
 }: {
   initialQuery?: string;
   syncUrl?: boolean;
   hideHeading?: boolean;
+  /** Show the newsletter signup inside the resting fallback (off where the page already shows it). */
+  inlineNewsletter?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
@@ -242,7 +245,7 @@ export function AskMedina({
                   ))}
                 </ul>
                 <p className="text-sm text-[var(--muted)]">Full government web search is resting until tomorrow.</p>
-                <NewsletterCta />
+                {inlineNewsletter && <NewsletterCta />}
               </div>
             )}
             {!data.resting && data.results.length === 0 && !data.local?.length && (
