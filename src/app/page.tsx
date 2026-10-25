@@ -6,10 +6,14 @@ import { Logo } from "@/components/logo";
 import { getDashboardStats } from "@/db/queries/stats";
 import { formatMoney } from "@/components/money-format";
 import { MEDINA_FACTS } from "@/lib/site";
+import { getOfficials, getPopulation, getAgendas, lastUpdated } from "@/lib/local-data";
+import { formatET } from "@/components/last-updated";
+import { ReportLink } from "@/components/forms";
 
 export const dynamic = "force-dynamic";
 
 const SECTIONS = [
+  { href: "/local", title: "Local Government", body: "Population, city councils in Medina, Brunswick and Wadsworth, and recent meeting agendas." },
   { href: "/people", title: "People Directory", body: "Browse employees, officials, and vendors. See salary history, payment records, and connections." },
   { href: "/money", title: "Money Flow", body: "Explore spending by department, top vendors, and payment timelines with interactive charts." },
   { href: "/docket", title: "Weekly Docket", body: "Browse weekly payment batches approved by commissioners. Filter by vendor, department, or amount." },
@@ -21,6 +25,13 @@ const SECTIONS = [
 export default function HomePage() {
   const stats = getDashboardStats();
   const hasData = stats.totalPeople + stats.totalDocketItems + stats.totalCampaigns + stats.totalBills > 0;
+  const pop = getPopulation();
+  const latestYear = pop.length ? Math.max(...pop.map((p) => p.year)) : null;
+  const popOf = (g: string) => pop.find((p) => p.geography === g && p.year === latestYear)?.population;
+  const officials = getOfficials();
+  const agendaCount = getAgendas(1000).length;
+  const hasLocal = pop.length > 0 || officials.length > 0;
+  const localUpdated = lastUpdated({ sources: ["census-county", "census-cities", "medina-council", "brunswick-council", "wadsworth-council", "wadsworth-agendas", "medina-agendas"] });
   const facts = MEDINA_FACTS.filter((f) => f.label && f.detail);
 
   return (
@@ -89,10 +100,32 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Live local data from official sources */}
+      {hasLocal && (
+        <section aria-labelledby="numbers-heading">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <h2 id="numbers-heading" className="text-2xl font-bold">By the numbers</h2>
+            {localUpdated && <p className="text-xs text-[var(--muted)]">Last updated {formatET(localUpdated)}</p>}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {popOf("Medina County") && <StatCard label="Medina County population" value={popOf("Medina County")!.toLocaleString()} sub={`Census estimate, ${latestYear}`} />}
+            {popOf("City of Medina") && <StatCard label="City of Medina" value={popOf("City of Medina")!.toLocaleString()} sub={`Census estimate, ${latestYear}`} />}
+            {popOf("City of Brunswick") && <StatCard label="City of Brunswick" value={popOf("City of Brunswick")!.toLocaleString()} sub={`Census estimate, ${latestYear}`} />}
+            {popOf("City of Wadsworth") && <StatCard label="City of Wadsworth" value={popOf("City of Wadsworth")!.toLocaleString()} sub={`Census estimate, ${latestYear}`} />}
+            {officials.length > 0 && <StatCard label="City officials listed" value={officials.length} sub="Medina, Brunswick, Wadsworth councils" />}
+            {agendaCount > 0 && <StatCard label="Meeting agendas" value={agendaCount} sub="From city websites" />}
+          </div>
+          <p className="mt-3 text-sm">
+            <a href="/local" className="font-semibold text-[var(--royal)] underline">See local government data and sources</a>
+          </p>
+          <ReportLink item="Home: By the numbers" />
+        </section>
+      )}
+
       {/* Stats, only when real data has been loaded */}
       {hasData && (
         <section aria-labelledby="stats-heading">
-          <h2 id="stats-heading" className="text-2xl font-bold">By the numbers</h2>
+          <h2 id="stats-heading" className="text-2xl font-bold">Records collected</h2>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             <StatCard label="People" value={stats.totalPeople.toLocaleString()} sub="Tracked entities" />
             <StatCard
