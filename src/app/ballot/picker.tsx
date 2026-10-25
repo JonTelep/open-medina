@@ -9,9 +9,9 @@ type P = Omit<Precinct, "contests"> & { contests: (Race | (Issue & { explainer: 
 
 const label = (p: P) => p.jurisdiction ?? `Precinct ${p.precinct}`;
 
-export function BallotPicker({ precincts, verifiedAt }: { precincts: P[]; verifiedAt: string }) {
+export function BallotPicker({ precincts, verifiedAt, initialGroup }: { precincts: P[]; verifiedAt: string; initialGroup?: string }) {
   const groups = useMemo(() => [...new Set(precincts.map(label))], [precincts]);
-  const [group, setGroup] = useState(groups[0]!);
+  const [group, setGroup] = useState(initialGroup && groups.includes(initialGroup) ? initialGroup : groups[0]!);
   const inGroup = precincts.filter((p) => label(p) === group);
   const [code, setCode] = useState(inGroup[0]!.code);
   const p = inGroup.find((x) => x.code === code) ?? inGroup[0]!;

@@ -9,6 +9,8 @@ import {
   targetedSource,
   type Jurisdiction,
 } from "./sources";
+import { searchLocal, namedCommunities, type LocalResult } from "./local";
+import { markExhausted, tryReserveCall } from "./credits";
 
 const ENDPOINT = "https://api.firecrawl.dev/v2/search/gov";
 const COUNTY_CONTEXT = "Medina County Ohio";
@@ -30,15 +32,24 @@ export interface AskResponse {
   results: AskResult[];
   /** Official website of the city, village or township the question names. */
   official?: { label: string; url: string } | null;
+  /** Answers from OpenMedina's own verified data, shown first. */
+  local: LocalResult[];
+  /** County and Board of Elections official links, shown when web search is resting. */
+  officialLinks: { label: string; url: string }[];
+  /** True when Firecrawl was skipped (daily cap) or out of credits / rate limited. */
+  resting: boolean;
   cached: boolean;
   fetchedAt: string;
 }
 
 export class UpstreamError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(message: string, public status: number, public limited = false) {
     super(message);
   }
 }
+
+/** Thrown before calling Firecrawl when today's cap is used up. */
+class CapReached extends Error {}
 
 // ── SQLite cache ────────────────────────────────────────────────────
 sqlite.exec(`CREATE TABLE IF NOT EXISTS ask_cache (
@@ -67,6 +78,7 @@ interface FirecrawlWeb {
 }
 
 async function firecrawl(params: Record<string, string>): Promise<FirecrawlWeb[]> {
+  if (!tryReserveCall()) throw new CapReached("daily cap");
   const url = `${ENDPOINT}?${new URLSearchParams(params).toString()}`;
   const headers: Record<string, string> = { Accept: "application/json" };
   const key = process.env.FIRECRAWL_API_KEY;
@@ -79,10 +91,12 @@ async function firecrawl(params: Record<string, string>): Promise<FirecrawlWeb[]
     /* ignore */
   }
   if (!res.ok || body.success === false) {
-    const limited = res.status === 429 || /rate limit|credits/i.test(body.error ?? "");
+    const limited = res.status === 429 || res.status === 402 || /rate limit|credit|insufficient|payment/i.test(body.error ?? "");
+    if (limited) markExhausted();
     throw new UpstreamError(
       limited ? "The search service is busy right now. Please try again later." : "The search service returned an error.",
-      limited ? 429 : 502
+      limited ? 429 : 502,
+      limited
     );
   }
   return body.data?.web ?? [];
@@ -138,10 +152,43 @@ export async function askMedina(rawQuery: string): Promise<AskResponse> {
   const official =
     named && ["city", "village", "township"].includes(named.jurisdiction)
       ? { label: named.label, url: `https://${named.domain}/` }
-      : null;
+      : officialFromName(query, federal);
+  const local = searchLocal(query);
+  const officialLinks = officialLinksFor(query);
   if (hit) {
-    return { ...(JSON.parse(hit.response) as AskResponse), official, cached: true };
+    return { ...(JSON.parse(hit.response) as AskResponse), official, local, officialLinks, resting: false, cached: true };
   }
+  try {
+    return await webSearch(query, federal, key, now, official, local, officialLinks);
+  } catch (e) {
+    if (!(e instanceof CapReached) && !(e instanceof UpstreamError)) throw e;
+    if (!(e instanceof CapReached)) console.warn("Ask Medina: web search unavailable:", e.message);
+    return { query, scope: "medina-county-oh", results: [], official, local, officialLinks, resting: true, cached: false, fetchedAt: new Date(now).toISOString() };
+  }
+}
+
+function officialFromName(query: string, federal: boolean) {
+  if (federal) return null;
+  const name = namedCommunities(query)[0];
+  const b = name ? BOOSTED_SOURCES.find((x) => x.label === name) : null;
+  return b ? { label: b.label, url: `https://${b.domain}/` } : null;
+}
+
+const COUNTY_LINK = { label: "Medina County government", url: "https://www.medinaco.org/" };
+const BOE_LINK = { label: "Medina County Board of Elections", url: "https://www.boe.ohio.gov/medina/" };
+function officialLinksFor(query: string) {
+  return isElectionQuery(query) ? [BOE_LINK, COUNTY_LINK] : [COUNTY_LINK, BOE_LINK];
+}
+
+async function webSearch(
+  query: string,
+  federal: boolean,
+  key: string,
+  now: number,
+  official: AskResponse["official"],
+  local: LocalResult[],
+  officialLinks: AskResponse["officialLinks"],
+): Promise<AskResponse> {
 
   const k = "8";
   const contextual = /medina county/i.test(query) ? `${query} Ohio` : `${query} ${COUNTY_CONTEXT}`;
@@ -197,16 +244,20 @@ export async function askMedina(rawQuery: string): Promise<AskResponse> {
     scope,
     results,
     official,
+    local,
+    officialLinks,
+    resting: false,
     cached: false,
     fetchedAt: new Date(now).toISOString(),
   };
 
   if (results.length) {
     const ttl = isElectionQuery(query) ? DAY_MS : 7 * DAY_MS;
-    putStmt.run(key, normalize(query), JSON.stringify(response), now, now + ttl);
+    const { local: _l, officialLinks: _o, ...stored } = response;
+    putStmt.run(key, normalize(query), JSON.stringify(stored), now, now + ttl);
     if (Math.random() < 0.05) pruneStmt.run(now);
   }
   return response;
 }
 
-export { BOOSTED_SOURCES };
+export { BOOSTED_SOURCES, namedCommunities };
