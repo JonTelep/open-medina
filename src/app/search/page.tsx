@@ -83,12 +83,16 @@ function SearchContent() {
 
   return (
     <div className="space-y-8">
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--gold-dark)]">Medina County, Ohio</p>
+        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[var(--navy)]">Ask Medina</h1>
+      </div>
       <div className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm sm:p-6">
-        <AskMedina initialQuery={q} syncUrl />
+        <AskMedina initialQuery={q} syncUrl hideHeading />
       </div>
 
       <div className="space-y-4">
-      <h2 className="text-lg font-semibold">OpenMedina database</h2>
+      <h2 className="text-xl font-bold text-[var(--navy)]">Search the OpenMedina database</h2>
       <SearchBar defaultValue={q} />
 
       <div className="flex flex-wrap items-center gap-2">

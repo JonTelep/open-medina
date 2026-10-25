@@ -46,7 +46,15 @@ const BADGE_TEXT: Record<AskResult["jurisdiction"], string> = {
   other: "Other",
 };
 
-export function AskMedina({ initialQuery = "", syncUrl = false }: { initialQuery?: string; syncUrl?: boolean }) {
+export function AskMedina({
+  initialQuery = "",
+  syncUrl = false,
+  hideHeading = false,
+}: {
+  initialQuery?: string;
+  syncUrl?: boolean;
+  hideHeading?: boolean;
+}) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [data, setData] = useState<AskResponse | null>(null);
@@ -89,7 +97,7 @@ export function AskMedina({ initialQuery = "", syncUrl = false }: { initialQuery
 
   return (
     <section className="space-y-4" aria-labelledby="ask-medina-heading">
-      <div>
+      <div className={hideHeading ? "sr-only" : ""}>
         <h2 id="ask-medina-heading" className="text-xl font-semibold sm:text-2xl">
           Ask Medina
         </h2>
@@ -110,26 +118,26 @@ export function AskMedina({ initialQuery = "", syncUrl = false }: { initialQuery
           maxLength={200}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="e.g. Do I need a permit for a fence in Medina?"
-          className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-base focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-light)]"
+          className="min-w-0 flex-1 rounded-lg border-2 border-[var(--royal)] bg-white px-4 py-3 text-base text-[var(--navy)] placeholder:text-slate-500 focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-light)]"
         />
         <button
           type="submit"
           disabled={loading || query.trim().length < 3}
-          className="rounded-lg bg-[var(--accent)] px-6 py-3 text-base font-medium text-white hover:bg-blue-800 disabled:opacity-60"
+          className="rounded-lg bg-[var(--gold)] px-6 py-3 text-base font-semibold text-[var(--navy)] hover:bg-yellow-400 disabled:opacity-60"
         >
           {loading ? "Searching..." : "Ask"}
         </button>
       </form>
 
       <div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Try asking</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Try asking</p>
         <div className="flex flex-wrap gap-2">
           {SUGGESTED.map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => ask(s)}
-              className="rounded-full border border-[var(--border)] bg-white px-3 py-1.5 text-left text-sm text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              className="rounded-full border border-[var(--royal)] bg-white px-3 py-1.5 text-left text-sm text-[var(--navy)] hover:bg-[var(--accent-light)]"
             >
               {s}
             </button>
@@ -158,7 +166,7 @@ export function AskMedina({ initialQuery = "", syncUrl = false }: { initialQuery
             )}
             <ul className="space-y-3">
               {data.results.map((r) => (
-                <li key={r.url} className="rounded-lg border border-[var(--border)] bg-white p-4 shadow-sm">
+                <li key={r.url} className="rounded-xl border border-[var(--royal)] bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className={`rounded-full px-2 py-0.5 font-medium ${BADGE[r.jurisdiction]}`}>
                       {BADGE_TEXT[r.jurisdiction]}
@@ -171,7 +179,7 @@ export function AskMedina({ initialQuery = "", syncUrl = false }: { initialQuery
                       {r.title}
                     </a>
                   </h3>
-                  {r.snippet && <p className="mt-1 text-sm text-[var(--foreground)]/80">{r.snippet}</p>}
+                  {r.snippet && <p className="mt-1 text-sm text-slate-700">{r.snippet}</p>}
                   <a
                     href={r.url}
                     target="_blank"

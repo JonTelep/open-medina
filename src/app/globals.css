@@ -1,12 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafafa;
-  --foreground: #0a0a0a;
-  --muted: #737373;
-  --border: #e5e5e5;
-  --accent: #1d4ed8;
-  --accent-light: #dbeafe;
+  --background: #f7f9fd;
+  --foreground: #0b1f4d;
+  --muted: #4a5878;
+  --border: #1f4fbf;
+  --border-soft: #c9d6f2;
+  --accent: #1f4fbf;
+  --accent-light: #dbe5fa;
+  --royal: #1f4fbf;
+  --navy: #0b1f4d;
+  --gold: #e8b528;
+  --gold-dark: #8a6508;
   --danger: #dc2626;
   --success: #16a34a;
 }
@@ -14,5 +19,16 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Softer dividers inside tables so data stays readable */
+table tr, table td, table th, thead, tbody { border-color: var(--border-soft) !important; }
+
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.bg-sunburst {
+  background-color: var(--navy);
+  background-image: repeating-conic-gradient(from 0deg at 50% 60%, rgba(255,255,255,0.05) 0deg 11.25deg, transparent 11.25deg 22.5deg);
 }

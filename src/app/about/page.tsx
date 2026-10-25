@@ -4,12 +4,16 @@ export default function AboutPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8 py-8">
       <div>
-        <h1 className="text-3xl font-bold">About OpenMedina</h1>
+        <h1 className="text-3xl font-extrabold text-[var(--navy)]">About OpenMedina</h1>
         <p className="mt-1 text-[var(--muted)]">openmedina.org</p>
       </div>
 
       <div className="space-y-4 text-lg leading-relaxed">
         <p>We believe in accountability through transparency.</p>
+        <p>
+          Our logo puts Medina County in gold at the heart of Ohio, with rays reaching out to every corner of the
+          state. The navy, royal blue and gold carry through the whole site.
+        </p>
         <p>
           OpenMedina makes Medina County government data accessible and
           searchable for every resident. Salaries, spending, meeting minutes,
