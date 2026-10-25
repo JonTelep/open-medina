@@ -13,12 +13,12 @@ export function formatET(iso: string) {
   );
 }
 
-export function LastUpdated({ scrapers, sources }: { scrapers?: string[]; sources?: string[] }) {
+export function LastUpdated({ scrapers, sources, label = "Last updated" }: { scrapers?: string[]; sources?: string[]; label?: string }) {
   const t = lastUpdated({ scrapers, sources });
   if (!t) return null;
   return (
     <p className="text-xs text-[var(--muted)]">
-      <span className="font-semibold">Last updated:</span>{" "}
+      <span className="font-semibold">{label}:</span>{" "}
       <time dateTime={t}>{formatET(t)}</time>
     </p>
   );

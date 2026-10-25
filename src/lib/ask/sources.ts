@@ -118,7 +118,7 @@ export function jurisdictionFor(url: string): { jurisdiction: Jurisdiction; labe
   } catch {
     return { jurisdiction: "other", label: "Other" };
   }
-  if (/(^|\.)ohio\.gov$/.test(host) || host.endsWith(".oh.us")) return { jurisdiction: "state", label: "State of Ohio" };
+  if (/(^|\.)ohio\.gov$/.test(host) || /^ohio[a-z]*\.gov$/.test(host) || host.endsWith(".oh.us")) return { jurisdiction: "state", label: "State of Ohio" };
   if (host.endsWith(".gov") || host.endsWith(".mil") || host.endsWith(".fed.us")) return { jurisdiction: "federal", label: "Federal" };
   return { jurisdiction: "other", label: "Other" };
 }

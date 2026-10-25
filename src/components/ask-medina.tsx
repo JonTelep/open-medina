@@ -17,6 +17,7 @@ interface AskResponse {
   query: string;
   scope: "medina-county-oh" | "us-federal-fallback";
   results: AskResult[];
+  official?: { label: string; url: string } | null;
   cached: boolean;
   fetchedAt: string;
 }
@@ -172,6 +173,20 @@ export function AskMedina({
               Official sources for &ldquo;{data.query}&rdquo;
               {data.scope === "us-federal-fallback" ? " (includes federal sources)" : ""}
             </p>
+            {data.official && (
+              <div className="rounded-xl border-2 border-[var(--gold)] bg-amber-50 p-3 text-sm sm:p-4">
+                <p className="font-semibold text-[var(--navy)]">
+                  Start with the{" "}
+                  <a href={data.official.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] underline">
+                    {data.official.label} official website
+                  </a>
+                </p>
+                <p className="mt-1 text-[var(--muted)]">
+                  Elected officials and contacts are on{" "}
+                  <a href="/local#communities" className="underline">our local government page</a>.
+                </p>
+              </div>
+            )}
             {data.results.length === 0 && (
               <p className="text-sm text-[var(--muted)]">
                 No official sources found. Try rewording your question or naming the city or office.

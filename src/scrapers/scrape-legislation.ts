@@ -112,6 +112,9 @@ export async function scrapeLegislation(): Promise<void> {
   }
 
   const runId = await startRun(SCRAPER_NAME);
+  // LegiScan history is oldest first; the latest action is the last entry with the newest date.
+  const latestAction = (h: { date: string; action: string }[] | undefined) =>
+    h?.length ? [...h].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).at(-1) : undefined;
   let processed = 0;
   let created = 0;
   let updated = 0;
@@ -143,6 +146,10 @@ export async function scrapeLegislation(): Promise<void> {
       const existingHash = existingHashes.get(entry.bill_id);
       if (existingHash === entry.change_hash) {
         const row = db.select({ id: bills.id }).from(bills).where(eq(bills.legiscanBillId, entry.bill_id)).get();
+        if (row && entry.last_action) {
+          // LegiScan's master list carries the true latest action; keep it in sync without a full refetch.
+          sqlite.prepare("UPDATE bills SET last_action = ?, last_action_date = ? WHERE id = ?").run(entry.last_action, entry.last_action_date, row.id);
+        }
         if (row) for (const r of reasons.get(entry.bill_id)!) sqlite.prepare("INSERT OR IGNORE INTO legislation_focus VALUES (?, ?)").run(row.id, r);
         continue; // No changes, skip
       }
@@ -174,9 +181,9 @@ export async function scrapeLegislation(): Promise<void> {
             statusLabel: statusLbl,
             statusDate: billDetail.status_date,
             lastAction:
-              billDetail.history[0]?.action ?? entry.last_action,
+              latestAction(billDetail.history)?.action ?? entry.last_action,
             lastActionDate:
-              billDetail.history[0]?.date ?? entry.last_action_date,
+              latestAction(billDetail.history)?.date ?? entry.last_action_date,
             url: billDetail.url,
             changeHash: billDetail.change_hash,
             updatedAt: new Date().toISOString(),
@@ -199,9 +206,9 @@ export async function scrapeLegislation(): Promise<void> {
             statusLabel: statusLbl,
             statusDate: billDetail.status_date,
             lastAction:
-              billDetail.history[0]?.action ?? entry.last_action,
+              latestAction(billDetail.history)?.action ?? entry.last_action,
             lastActionDate:
-              billDetail.history[0]?.date ?? entry.last_action_date,
+              latestAction(billDetail.history)?.date ?? entry.last_action_date,
             url: billDetail.url,
             changeHash: billDetail.change_hash,
             source: "legiscan",

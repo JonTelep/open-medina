@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/og";
 import { AskMedina } from "@/components/ask-medina";
+import { NewsletterCta } from "@/components/newsletter-cta";
 
 export const metadata: Metadata = pageMeta(
   "/search",
@@ -19,6 +20,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       <div className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm sm:p-6">
         <AskMedina initialQuery={q} syncUrl hideHeading />
       </div>
+      <NewsletterCta />
     </div>
   );
 }
