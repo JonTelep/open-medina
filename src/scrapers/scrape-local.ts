@@ -83,18 +83,14 @@ async function censusCounty(): Promise<number> {
     .map(({ col, i }) => ({ year: Number(col.slice(-4)), pop: Number(r[i]) }))
     .filter((v) => v.pop > 0);
   replaceRows("local_population", "census-county", () => {
-    const ins = sqlite.prepare("INSERT OR REPLACE INTO local_population VALUES (?, ?, ?, 'census-county')");
-    for (const v of vals) ins.run("Medina County", v.year, v.pop);
+    const ins = sqlite.prepare("INSERT OR REPLACE INTO local_population (geography, year, population, source_key, source_url, verified_at) VALUES (?, ?, ?, 'census-county', ?, ?)");
+    const t = now();
+    for (const v of vals) ins.run("Medina County", v.year, v.pop, CENSUS_COUNTY, t);
   });
   return vals.length;
 }
 
 // ── ACS 5-year estimates (Census API, key from env, never stored in URLs we save) ──
-sqlite.exec(`CREATE TABLE IF NOT EXISTS local_acs (
-  geography TEXT NOT NULL, year INTEGER NOT NULL, measure TEXT NOT NULL,
-  value REAL, moe REAL, variable TEXT NOT NULL, source_key TEXT NOT NULL,
-  PRIMARY KEY (geography, measure)
-)`);
 export const ACS_URL = "https://api.census.gov/data/2024/acs/acs5";
 const ACS_VARS = [
   { measure: "Median household income", table: "", v: "B19013_001" },
@@ -111,7 +107,7 @@ const ACS_GEOS = [
 async function censusAcs(): Promise<number> {
   const key = process.env.CENSUS_API_KEY;
   if (!key) throw new Error("CENSUS_API_KEY not set");
-  const rows: [string, number, string, number, number, string][] = [];
+  const rows: [string, number, string, number, number, string, string, string][] = [];
   for (const g of ACS_GEOS)
     for (const a of ACS_VARS) {
       const res = await fetch(`${ACS_URL}${a.table}?get=NAME,${a.v}E,${a.v}M&${g.q}&key=${key}`, { signal: AbortSignal.timeout(60000) });
@@ -119,9 +115,9 @@ async function censusAcs(): Promise<number> {
       const [, r] = (await res.json()) as string[][];
       const val = Number(r![1]);
       if (!Number.isFinite(val) || val < 0) throw new Error(`Census API returned no value for ${g.name} ${a.v}`);
-      rows.push([g.name, 2024, a.measure, val, Number(r![2]), a.v + "E"]);
+      rows.push([g.name, 2024, a.measure, val, Number(r![2]), a.v + "E", `${ACS_URL}${a.table}?get=NAME,${a.v}E,${a.v}M&${g.q}`, now()]);
     }
-  const ins = sqlite.prepare("INSERT OR REPLACE INTO local_acs VALUES (?, ?, ?, ?, ?, ?, 'census-acs')");
+  const ins = sqlite.prepare("INSERT OR REPLACE INTO local_acs (geography, year, measure, value, moe, variable, source_url, verified_at, source_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'census-acs')");
   sqlite.transaction(() => rows.forEach((r) => ins.run(...r)))();
   return rows.length;
 }
@@ -143,8 +139,9 @@ async function censusCities(): Promise<number> {
   }
   if (new Set(found.map((f) => f.name)).size !== 3) throw new Error("Expected 3 cities in Census file");
   replaceRows("local_population", "census-cities", () => {
-    const ins = sqlite.prepare("INSERT OR REPLACE INTO local_population VALUES (?, ?, ?, 'census-cities')");
-    for (const f of found) (ins.run(f.name, f.year, f.pop), n++);
+    const ins = sqlite.prepare("INSERT OR REPLACE INTO local_population (geography, year, population, source_key, source_url, verified_at) VALUES (?, ?, ?, 'census-cities', ?, ?)");
+    const t = now();
+    for (const f of found) (ins.run(f.name, f.year, f.pop, CENSUS_CITIES, t), n++);
   });
   return n;
 }
@@ -156,9 +153,11 @@ function saveOfficials(key: string, jurisdiction: string, list: Official[]) {
   if (list.length < 3) throw new Error(`Parsed only ${list.length} officials, page layout may have changed`);
   replaceRows("local_officials", key, () => {
     const ins = sqlite.prepare(
-      "INSERT INTO local_officials (jurisdiction, body, name, role, term, sort, source_key) VALUES (?, 'City Council', ?, ?, ?, ?, ?)"
+      "INSERT INTO local_officials (jurisdiction, body, name, role, term, sort, source_key, source_url, verified_at) VALUES (?, 'City Council', ?, ?, ?, ?, ?, ?, ?)"
     );
-    list.forEach((o, i) => ins.run(jurisdiction, o.name, o.role, o.term ?? null, i, key));
+    const url = { "medina-council": MEDINA_COUNCIL, "brunswick-council": BRUNSWICK_COUNCIL, "wadsworth-council": WADSWORTH_COUNCIL }[key] ?? null;
+    const t = now();
+    list.forEach((o, i) => ins.run(jurisdiction, o.name, o.role, o.term ?? null, i, key, url, t));
   });
   return list.length;
 }
@@ -264,10 +263,6 @@ async function medinaAgendas() {
 // ── All jurisdictions: Medina County Public Officials Directory (official county PDF) ──
 export const COUNTY_DIRECTORY = "https://www.medinaco.org/wp-content/uploads/2026-Public-Officials-Directory_0926.pdf";
 const SUB_EST = "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv";
-sqlite.exec(`CREATE TABLE IF NOT EXISTS local_jurisdictions (
-  name TEXT PRIMARY KEY, kind TEXT NOT NULL, website TEXT, population INTEGER, pop_year INTEGER,
-  pop_note TEXT, sort INTEGER NOT NULL
-)`);
 const ROLE_HEADINGS: Record<string, string> = {
   "MAYOR": "Mayor", "FISCAL OFFICER": "Fiscal Officer", "CLERK TREASURER": "Clerk Treasurer",
   "CLERK OF COUNCIL": "Clerk of Council", "TRUSTEES": "Trustee", "COUNCIL MEMBERS": "Council Member",
@@ -326,9 +321,10 @@ async function countyDirectory(): Promise<number> {
   const h = hdr!;
   const col = (r: string[], c: string) => r[h.indexOf(c)]!;
   const pop = (pred: (r: string[]) => boolean) => rows.find(pred);
-  const insJ = sqlite.prepare("INSERT OR REPLACE INTO local_jurisdictions VALUES (?, ?, ?, ?, 2025, ?, ?)");
-  const insO = sqlite.prepare("INSERT INTO local_officials (jurisdiction, body, name, role, term, source_key) VALUES (?, ?, ?, ?, NULL, 'county-directory')");
+  const insJ = sqlite.prepare("INSERT OR REPLACE INTO local_jurisdictions (name, kind, website, population, pop_year, pop_note, sort, source_url, verified_at) VALUES (?, ?, ?, ?, 2025, ?, ?, ?, ?)");
+  const insO = sqlite.prepare("INSERT INTO local_officials (jurisdiction, body, name, role, term, source_key, source_url, verified_at) VALUES (?, ?, ?, ?, NULL, 'county-directory', ?, ?)");
   let n = 0;
+  const t = now();
   sqlite.transaction(() => {
     sqlite.prepare("DELETE FROM local_officials WHERE source_key = 'county-directory'").run();
     js.forEach((j, i) => {
@@ -343,13 +339,13 @@ async function countyDirectory(): Promise<number> {
         if (base === "Gloria Glens") p = pop((r) => col(r, "STATE") === "39" && col(r, "SUMLEV") === "162" && col(r, "NAME") === "Gloria Glens Park village");
         if (base === "Rittman") {
           const part = pop((r) => col(r, "STATE") === "39" && col(r, "COUNTY") === "103" && col(r, "SUMLEV") === "071" && col(r, "NAME") === "Rittman city (pt.)");
-          note = part ? `Total city population. About ${Number(col(part, "POPESTIMATE2025")).toLocaleString()} live in the Medina County part; most of Rittman is in Wayne County.` : null;
+          note = part ? "Total city population. Part of Rittman is in Medina County; most of the city is in Wayne County." : null;
         }
       }
       if (j.kind === "township") note = "Census township estimate. Includes unincorporated communities and any village that is part of the township.";
       if (base === "Liverpool") note = "Census township estimate. Includes the unincorporated community of Valley City.";
-      insJ.run(j.name, j.kind, j.website ?? null, p ? Number(col(p, "POPESTIMATE2025")) : null, note, j.name.startsWith("Liverpool") ? -1 : i);
-      for (const o of j.people) { insO.run(j.name, j.kind === "township" ? "Board of Trustees" : "Village/City Council", o.name, o.role); n++; }
+      insJ.run(j.name, j.kind, j.website ?? null, p ? Number(col(p, "POPESTIMATE2025")) : null, note, j.name.startsWith("Liverpool") ? -1 : i, p ? SUB_EST : null, p ? t : null);
+      for (const o of j.people) { insO.run(j.name, j.kind === "township" ? "Board of Trustees" : "Village/City Council", o.name, o.role, COUNTY_DIRECTORY, t); n++; }
     });
   })();
   return n;

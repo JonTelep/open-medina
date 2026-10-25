@@ -38,7 +38,23 @@ CREATE TABLE IF NOT EXISTS local_agendas (
   minutes_url TEXT,
   source_key TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS local_acs (
+  geography TEXT NOT NULL, year INTEGER NOT NULL, measure TEXT NOT NULL,
+  value REAL, moe REAL, variable TEXT NOT NULL, source_key TEXT NOT NULL,
+  PRIMARY KEY (geography, measure)
+);
+CREATE TABLE IF NOT EXISTS local_jurisdictions (
+  name TEXT PRIMARY KEY, kind TEXT NOT NULL, website TEXT, population INTEGER, pop_year INTEGER,
+  pop_note TEXT, sort INTEGER NOT NULL
+);
 `);
+
+// Every figure row carries the exact URL it came from and when it was last verified.
+for (const table of ["local_population", "local_acs", "local_jurisdictions", "local_officials"]) {
+  const cols = (sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name);
+  if (!cols.includes("source_url")) sqlite.exec(`ALTER TABLE ${table} ADD COLUMN source_url TEXT`);
+  if (!cols.includes("verified_at")) sqlite.exec(`ALTER TABLE ${table} ADD COLUMN verified_at TEXT`);
+}
 
 export interface LocalSource {
   key: string;
@@ -60,14 +76,14 @@ export function getSource(key: string): LocalSource | undefined {
 
 export function getPopulation() {
   return sqlite
-    .prepare("SELECT geography, year, population, source_key FROM local_population ORDER BY geography, year")
-    .all() as { geography: string; year: number; population: number; source_key: string }[];
+    .prepare("SELECT geography, year, population, source_key, source_url, verified_at FROM local_population ORDER BY geography, year")
+    .all() as { geography: string; year: number; population: number; source_key: string; source_url: string | null; verified_at: string | null }[];
 }
 
 export function getOfficials() {
   return sqlite
     .prepare("SELECT * FROM local_officials ORDER BY jurisdiction, sort")
-    .all() as { jurisdiction: string; body: string; name: string; role: string; term: string | null; source_key: string }[];
+    .all() as { jurisdiction: string; body: string; name: string; role: string; term: string | null; source_key: string; source_url: string | null; verified_at: string | null }[];
 }
 
 export function getAgendas(limit = 12) {
@@ -105,8 +121,8 @@ export function lastUpdated(opts: { scrapers?: string[]; sources?: string[] }): 
 
 export function getAcs() {
   try {
-    return sqlite.prepare("SELECT geography, year, measure, value, moe, variable FROM local_acs").all() as {
-      geography: string; year: number; measure: string; value: number; moe: number; variable: string;
+    return sqlite.prepare("SELECT geography, year, measure, value, moe, variable, source_url, verified_at FROM local_acs").all() as {
+      geography: string; year: number; measure: string; value: number; moe: number; variable: string; source_url: string | null; verified_at: string | null;
     }[];
   } catch {
     return [];
@@ -116,7 +132,7 @@ export function getAcs() {
 export function getJurisdictions() {
   try {
     return sqlite.prepare("SELECT * FROM local_jurisdictions ORDER BY sort").all() as {
-      name: string; kind: string; website: string | null; population: number | null; pop_year: number; pop_note: string | null;
+      name: string; kind: string; website: string | null; population: number | null; pop_year: number; pop_note: string | null; source_url: string | null; verified_at: string | null;
     }[];
   } catch {
     return [];

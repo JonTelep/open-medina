@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/og";
 import { getAcs, getAgendas, getJurisdictions, getOfficials, getPopulation, getSources } from "@/lib/local-data";
 import { LastUpdated, formatET } from "@/components/last-updated";
 import { ReportLink } from "@/components/forms";
+import { Sourced, fmtNum } from "@/components/sourced";
+import { NewsletterCta } from "@/components/newsletter-cta";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Local Government" };
+export const metadata: Metadata = pageMeta(
+  "/local",
+  "Local Government",
+  "Every city, village and township in Medina County, Ohio: Census data and elected officials, each linked to its official source.",
+  "/og-local.png",
+);
 
 const ORDER = ["Medina County", "City of Medina", "City of Brunswick", "City of Wadsworth"];
 const COUNCILS = ["City of Medina", "City of Brunswick", "City of Wadsworth"];
@@ -19,7 +27,7 @@ export default function LocalPage() {
   const juris2 = getJurisdictions();
   const dirOfficials = officials.filter((o) => o.source_key === "county-directory");
   const measures = [...new Set(acs.map((a) => a.measure))];
-  const fmt = (m: string, v: number) => (m.includes("rate") || m.includes("degree") ? `${v}%` : `$${v.toLocaleString()}`);
+  const fmt = (m: string, v: number) => fmtNum(v, m.includes("rate") || m.includes("degree") ? "pct" : "usd");
 
   function SourceLink({ k }: { k: string }) {
     const s = sources.find((x) => x.key === k);
@@ -64,7 +72,7 @@ export default function LocalPage() {
                     <td className="px-4 py-2 font-medium">{g}</td>
                     {years.map((y) => {
                       const v = pop.find((p) => p.geography === g && p.year === y);
-                      return <td key={y} className="px-4 py-2 text-right tabular-nums">{v ? v.population.toLocaleString() : ""}</td>;
+                      return <td key={y} className="px-4 py-2 text-right tabular-nums">{v && <Sourced block value={fmtNum(v.population)} url={v.source_url} verifiedAt={v.verified_at} />}</td>;
                     })}
                   </tr>
                 ))}
@@ -95,8 +103,14 @@ export default function LocalPage() {
                       const v = acs.find((a) => a.geography === g && a.measure === m);
                       return (
                         <td key={g} className="px-4 py-2 text-right tabular-nums">
-                          {v ? fmt(m, v.value) : ""}
-                          {v && <div className="text-[10px] text-[var(--muted)]">± {fmt(m, v.moe)}</div>}
+                          {v && (
+                            <Sourced
+                              block
+                              value={<>{fmt(m, v.value)}<span className="block text-[10px] text-[var(--muted)]">± {fmt(m, v.moe)}</span></>}
+                              url={v.source_url}
+                              verifiedAt={v.verified_at}
+                            />
+                          )}
                         </td>
                       );
                     })}
@@ -117,7 +131,7 @@ export default function LocalPage() {
         <section id="communities">
           <h2 className="text-2xl font-bold">Every city, village and township</h2>
           <p className="mt-1 max-w-3xl text-sm text-[var(--muted)]">
-            Medina County has 4 cities (part of Rittman is in the county), 6 villages and 17 townships. Elected officials
+            Every city, village and township in Medina County, including the part of Rittman in the county. Elected officials
             are from the county&apos;s official Public Officials Directory. Populations are Census estimates for July 1, {juris2[0]!.pop_year}.
           </p>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -128,7 +142,7 @@ export default function LocalPage() {
                   <summary className="cursor-pointer list-none">
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="font-semibold text-[var(--navy)]">{j.name}{j.name === "Liverpool Township" ? " (Valley City)" : ""}</span>
-                      {j.population != null && <span className="shrink-0 text-sm tabular-nums">{j.population.toLocaleString()} people</span>}
+                      {j.population != null && <Sourced block className="shrink-0 text-right text-sm tabular-nums" value={`${fmtNum(j.population)} people`} url={j.source_url} verifiedAt={j.verified_at} />}
                     </div>
                     <span className="text-xs capitalize text-[var(--muted)]">{j.kind}</span>
                   </summary>
@@ -157,6 +171,8 @@ export default function LocalPage() {
           </div>
         </section>
       )}
+
+      <NewsletterCta />
 
       <section>
         <h2 className="text-2xl font-bold">City councils</h2>
@@ -239,7 +255,7 @@ export default function LocalPage() {
                   <td className="px-4 py-2">
                     {s.last_error
                       ? <span className="text-red-700">Last attempt failed: {s.last_error}</span>
-                      : <span className="text-green-700">OK, {s.record_count} records</span>}
+                      : <span className="text-green-700">OK</span>}
                   </td>
                 </tr>
               ))}

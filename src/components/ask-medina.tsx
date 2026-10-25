@@ -109,8 +109,8 @@ export function AskMedina({
           Ask Medina
         </h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Ask a question about local government anywhere in Medina County, Ohio: the cities, the six villages,
-          and all 17 townships, from Liverpool Township in Valley City to York. We search official government websites and link you straight to the source.
+          Ask a question about local government anywhere in Medina County, Ohio: every city, village
+          and township, from Liverpool Township in Valley City to York. We search official government websites and link you straight to the source.
         </p>
       </div>
 
@@ -169,7 +169,7 @@ export function AskMedina({
         {data && (
           <div className="space-y-3">
             <p className="text-sm text-[var(--muted)]">
-              {data.results.length} result{data.results.length === 1 ? "" : "s"} for &ldquo;{data.query}&rdquo;
+              Official sources for &ldquo;{data.query}&rdquo;
               {data.scope === "us-federal-fallback" ? " (includes federal sources)" : ""}
             </p>
             {data.results.length === 0 && (
