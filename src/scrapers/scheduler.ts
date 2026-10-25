@@ -49,7 +49,7 @@ function tick() {
   if (et.hour === 4 && lastDaily !== et.day) {
     lastDaily = et.day;
     lastElection = now;
-    return run(["census", "councils", "agendas", "elections"], () => run(["legislation"]));
+    return run(["census", "councils", "agendas", "elections", "directory"], () => run(["legislation"]));
   }
   if (now < ELECTION_END && now - lastElection >= 6 * 3600_000) {
     lastElection = now;
@@ -82,9 +82,11 @@ function isEmpty() {
 log("scheduler started");
 const needAcs = count("SELECT count(*) c FROM local_acs") === 0;
 const needBills = count("SELECT count(*) c FROM bills") === 0;
-if (isEmpty() || needAcs || needBills) {
+let needDir = false;
+try { needDir = count("SELECT count(*) c FROM local_jurisdictions") === 0; } catch { needDir = true; }
+if (isEmpty() || needAcs || needBills || needDir) {
   lastElection = Date.now();
-  run(["census", "councils", "agendas", "elections"], needBills ? () => run(["legislation"]) : undefined);
+  run(["census", "councils", "agendas", "elections", "directory"], needBills ? () => run(["legislation"]) : undefined);
 } else {
   lastElection = Date.now() - 6 * 3600_000 + 60_000; // first election check about a minute after start
 }
