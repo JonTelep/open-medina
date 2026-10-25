@@ -18,7 +18,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[var(--navy)]">Ask Medina</h1>
       </div>
       <div className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm sm:p-6">
-        <AskMedina initialQuery={q} syncUrl hideHeading />
+        <AskMedina initialQuery={q} syncUrl hideHeading inlineNewsletter={false} />
       </div>
       <NewsletterCta />
     </div>
