@@ -28,22 +28,22 @@ export default function BudgetPage() {
       <section aria-labelledby="gf-heading" className="space-y-3">
         <h2 id="gf-heading" className="text-xl font-semibold">General Fund: final budget vs actual spending</h2>
         <div className="overflow-x-auto rounded-xl border border-[var(--royal)] bg-white">
-          <table className="w-full min-w-[34rem] text-left text-sm">
+          <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-[var(--navy)] text-white">
               <tr>
-                <th scope="col" className="px-3 py-2">Year</th>
-                <th scope="col" className="px-3 py-2">Final budget</th>
-                <th scope="col" className="px-3 py-2">Actual spending</th>
-                <th scope="col" className="px-3 py-2">Under budget by</th>
+                <th scope="col" className="px-2 py-2 sm:px-3">Year</th>
+                <th scope="col" className="px-2 py-2 sm:px-3">Final budget</th>
+                <th scope="col" className="px-2 py-2 sm:px-3">Actual spending</th>
+                <th scope="col" className="px-2 py-2 sm:px-3">Under budget by</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.year} className="border-t border-slate-200 align-top">
-                  <th scope="row" className="px-3 py-2 font-semibold">{r.year}</th>
-                  <td className="px-3 py-2">{usd(r.finalExpenditures, r)}</td>
-                  <td className="px-3 py-2">{usd(r.actualExpenditures, r)}</td>
-                  <td className="px-3 py-2">{usd(r.finalExpenditures - r.actualExpenditures, r)}</td>
+                  <th scope="row" className="px-2 py-2 sm:px-3 font-semibold">{r.year}</th>
+                  <td className="px-2 py-2 sm:px-3">{usd(r.finalExpenditures, r)}</td>
+                  <td className="px-2 py-2 sm:px-3">{usd(r.actualExpenditures, r)}</td>
+                  <td className="px-2 py-2 sm:px-3">{usd(r.finalExpenditures - r.actualExpenditures, r)}</td>
                 </tr>
               ))}
             </tbody>
@@ -54,20 +54,20 @@ export default function BudgetPage() {
       <section aria-labelledby="rev-heading" className="space-y-3">
         <h2 id="rev-heading" className="text-xl font-semibold">General Fund: expected vs actual revenue</h2>
         <div className="overflow-x-auto rounded-xl border border-[var(--royal)] bg-white">
-          <table className="w-full min-w-[26rem] text-left text-sm">
+          <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-[var(--navy)] text-white">
               <tr>
-                <th scope="col" className="px-3 py-2">Year</th>
-                <th scope="col" className="px-3 py-2">Final budgeted revenue</th>
-                <th scope="col" className="px-3 py-2">Actual revenue</th>
+                <th scope="col" className="px-2 py-2 sm:px-3">Year</th>
+                <th scope="col" className="px-2 py-2 sm:px-3">Final budgeted revenue</th>
+                <th scope="col" className="px-2 py-2 sm:px-3">Actual revenue</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.year} className="border-t border-slate-200 align-top">
-                  <th scope="row" className="px-3 py-2 font-semibold">{r.year}</th>
-                  <td className="px-3 py-2">{usd(r.finalRevenues, r)}</td>
-                  <td className="px-3 py-2">{usd(r.actualRevenues, r)}</td>
+                  <th scope="row" className="px-2 py-2 sm:px-3 font-semibold">{r.year}</th>
+                  <td className="px-2 py-2 sm:px-3">{usd(r.finalRevenues, r)}</td>
+                  <td className="px-2 py-2 sm:px-3">{usd(r.actualRevenues, r)}</td>
                 </tr>
               ))}
             </tbody>
