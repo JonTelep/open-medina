@@ -7,7 +7,7 @@ Neutral, no endorsements. Check each group's rules before posting. Do not post w
 
 Voting in Liverpool Township or Valley City on November 3? OpenMedina now shows what is on your ballot, copied from the official Medina County Board of Elections sample ballots.
 
-Liverpool Township has two fire and EMS levies on the ballot: a 2 mill renewal and a 1.5 mill additional levy, each for 5 years. The page shows the county auditor's cost estimates exactly as printed on the ballot, the full official wording, and a link to the official sample ballot PDF for your precinct.
+Liverpool Township has two fire and EMS levies on the ballot: a renewal of up to 2 mills and an additional levy of up to 1.5 mills, each for 5 years. The page shows the county auditor's cost estimates exactly as printed on the ballot, the full official wording, and a link to the official sample ballot PDF for your precinct.
 
 It is informational only. We do not take sides on candidates or issues.
 
@@ -33,7 +33,7 @@ Want one short email each week with new agendas, votes and data for Medina Count
 
 ## 4. State legislation
 
-What is happening in Columbus that affects Medina County? OpenMedina tracks Ohio bills sponsored by Medina County's state legislators or that mention Medina County. Each bill links to its LegiScan page and its official page on legislature.ohio.gov, and roll call votes show how our legislators voted.
+What is happening in Columbus that affects Medina County? OpenMedina tracks Ohio bills sponsored by Medina County's state legislators or that mention Medina County. Each bill links to its LegiScan page and its official page on legislature.ohio.gov, and each legislator's page lists their recent votes.
 
 https://openmedina.org/legislation?utm_source=facebook#bills
 
@@ -45,4 +45,4 @@ Not sure which office handles something, or when a board meets? Ask Medina searc
 
 https://openmedina.org/search?q=When+do+the+Liverpool+Township+trustees+meet+in+Valley+City%3F&utm_source=facebook
 
-Want one short email each week with new agendas, votes and data for Medina County? Sign up at openmedina.org.
+Want one short email each week with new agendas, votes and data for Medina County? Sign up below the results.
