@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
+import { NewsletterForm } from "./forms";
 
 const local = [
   { href: "https://www.medinacounty.gov", label: "Medina County" },
@@ -25,6 +26,9 @@ export function Footer() {
             Open government for Medina County, Ohio. Built for the residents of Medina, Brunswick, Wadsworth and
             every township in between.
           </p>
+          <h2 className="mt-6 text-sm font-semibold uppercase tracking-wider text-[var(--gold)]">Medina This Week</h2>
+          <p className="mt-1 text-sm text-blue-100">A weekly email with new agendas and data updates.</p>
+          <div className="mt-2"><NewsletterForm dark /></div>
         </div>
 
         <div>
@@ -32,6 +36,7 @@ export function Footer() {
           <ul className="mt-3 grid grid-cols-2 gap-2 text-sm">
             {[
               ["/search", "Ask Medina"],
+              ["/local", "Local Government"],
               ["/people", "People"],
               ["/money", "Money"],
               ["/docket", "Docket"],
@@ -39,6 +44,7 @@ export function Footer() {
               ["/donations", "Donations"],
               ["/legislation", "Legislation"],
               ["/about", "About"],
+              ["/contact", "Report an issue"],
             ].map(([href = "", label]) => (
               <li key={href}>
                 <Link href={href} className="hover:text-white hover:underline">

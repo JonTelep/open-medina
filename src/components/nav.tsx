@@ -7,6 +7,7 @@ import { Logo } from "./logo";
 
 const links = [
   { href: "/search", label: "Ask Medina" },
+  { href: "/local", label: "Local" },
   { href: "/people", label: "People" },
   { href: "/money", label: "Money" },
   { href: "/docket", label: "Docket" },

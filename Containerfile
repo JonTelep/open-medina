@@ -73,6 +73,9 @@ if [ "$ROW_COUNT" = "0" ] && [ "${SEED_SAMPLE_DATA:-0}" = "1" ]; then
   npx tsx src/db/seed.ts
 fi
 
+echo "Starting refresh scheduler (log: /app/data/logs/scrape.log)..."
+npx tsx src/scrapers/scheduler.ts >/dev/null 2>&1 &
+
 echo "Starting server on port ${PORT}..."
 exec node server.js
 EOF
