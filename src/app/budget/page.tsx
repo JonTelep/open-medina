@@ -27,7 +27,21 @@ export default function BudgetPage() {
 
       <section aria-labelledby="gf-heading" className="space-y-3">
         <h2 id="gf-heading" className="text-xl font-semibold">General Fund: final budget vs actual spending</h2>
-        <div className="overflow-x-auto rounded-xl border border-[var(--royal)] bg-white">
+        <ul className="space-y-3 sm:hidden">
+          {rows.map((r) => (
+            <li key={r.year} className="rounded-xl border border-[var(--royal)] bg-white p-4 text-sm">
+              <p className="text-base font-semibold text-[var(--navy)]">{r.year}</p>
+              <dl className="mt-2 grid grid-cols-2 gap-3">
+                <div><dt className="text-xs text-[var(--muted)]">Final budget</dt><dd>{usd(r.finalExpenditures, r)}</dd></div>
+                <div><dt className="text-xs text-[var(--muted)]">Actual spending</dt><dd>{usd(r.actualExpenditures, r)}</dd></div>
+                <div><dt className="text-xs text-[var(--muted)]">Under budget by</dt><dd>{usd(r.finalExpenditures - r.actualExpenditures, r)}</dd></div>
+                <div><dt className="text-xs text-[var(--muted)]">Budgeted revenue</dt><dd>{usd(r.finalRevenues, r)}</dd></div>
+                <div><dt className="text-xs text-[var(--muted)]">Actual revenue</dt><dd>{usd(r.actualRevenues, r)}</dd></div>
+              </dl>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden overflow-x-auto sm:block rounded-xl border border-[var(--royal)] bg-white">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-[var(--navy)] text-white">
               <tr>
@@ -51,7 +65,7 @@ export default function BudgetPage() {
         </div>
       </section>
 
-      <section aria-labelledby="rev-heading" className="space-y-3">
+      <section aria-labelledby="rev-heading" className="hidden space-y-3 sm:block">
         <h2 id="rev-heading" className="text-xl font-semibold">General Fund: expected vs actual revenue</h2>
         <div className="overflow-x-auto rounded-xl border border-[var(--royal)] bg-white">
           <table className="w-full text-left text-xs sm:text-sm">
