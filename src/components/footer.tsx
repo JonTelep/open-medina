@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "./logo";
 import { NewsletterForm } from "./forms";
 import { NEWSLETTER_PITCH } from "./newsletter-cta";
+import { OtherSites } from "./other-sites";
 import { liveSections } from "@/lib/sections";
 
 const local = [
@@ -68,6 +69,7 @@ export function Footer() {
           advice. Always confirm details with the official source.
         </p>
       </div>
+      <OtherSites />
     </footer>
   );
 }
